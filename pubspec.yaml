@@ -1,0 +1,40 @@
+name: sumber_dapur
+description: A new Flutter project.
+
+publish_to: 'none' # Remove this line if you want to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UUID Generator
+  uuid: ^4.4.0
+
+  # Icons
+  cupertino_icons: ^1.0.2
+
+  # State Management
+  provider: ^6.0.5
+
+  # Koneksi API
+  http: ^1.1.0
+
+  # Simpan data login
+  shared_preferences: ^2.2.0
+
+  # Format Rupiah / tanggal
+  intl: ^0.18.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
