@@ -12,7 +12,11 @@ class ProductDetailScreen extends StatefulWidget {
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTickerProviderStateMixin {
+class _ProductDetailScreenState extends State<ProductDetailScreen>
+    with SingleTickerProviderStateMixin {
+  // Definisikan warna primer
+  static const Color primaryColor = Color(0xFF1ED760);
+
   int _quantity = 1;
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
@@ -23,13 +27,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 800),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeIn),
     );
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 0.3),
+      begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
@@ -43,16 +47,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final cartService = Provider.of<CartService>(context);
+    final cartService = Provider.of<CartService>(context, listen: false);
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
+          // Gradien diubah ke hijau
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF667eea), Colors.white],
-            stops: [0.0, 0.4],
+            colors: [primaryColor, Colors.white],
+            stops: const [0.0, 0.4],
           ),
         ),
         child: SafeArea(
@@ -64,7 +69,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   child: Column(
                     children: [
                       _buildProductImage(),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       _buildProductInfo(),
                     ],
                   ),
@@ -80,7 +85,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
 
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -92,11 +97,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+              icon:
+                  const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          Text(
+          const Text(
             'Detail Produk',
             style: TextStyle(
               fontSize: 20,
@@ -112,10 +118,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: Icon(Icons.share, color: Colors.white, size: 20),
+              icon: const Icon(Icons.share, color: Colors.white, size: 20),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('Fitur berbagi segera hadir'),
                     behavior: SnackBarBehavior.floating,
                   ),
@@ -143,22 +149,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 30,
-                offset: Offset(0, 15),
+                offset: const Offset(0, 15),
               ),
             ],
           ),
           child: Container(
-            margin: EdgeInsets.all(30),
+            margin: const EdgeInsets.all(30),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFe0c3fc), Color(0xFF8ec5fc)],
-              ),
+              // Gradien diganti abu-abu
+              color: Colors.grey[100],
               shape: BoxShape.circle,
             ),
             child: Icon(
               _getCategoryIcon(widget.product.category),
               size: 120,
-              color: Colors.white,
+              // Ikon diganti hijau
+              color: primaryColor,
             ),
           ),
         ),
@@ -172,46 +178,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(40),
               topRight: Radius.circular(40),
             ),
           ),
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Category Badge
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Color(0xFF667eea).withOpacity(0.1),
+                  // Warna diganti hijau
+                  color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   widget.product.category,
-                  style: TextStyle(
-                    color: Color(0xFF667eea),
+                  style: const TextStyle(
+                    // Warna diganti hijau
+                    color: primaryColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
               ),
-              SizedBox(height: 16),
-              
+              const SizedBox(height: 16),
+
               // Product Name
               Text(
                 widget.product.name,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
-              SizedBox(height: 8),
-              
+              const SizedBox(height: 8),
+
               // Rating (Mock)
               Row(
                 children: [
@@ -224,15 +233,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                       );
                     }),
                   ),
-                  SizedBox(width: 8),
-                  Text(
+                  const SizedBox(width: 8),
+                  const Text(
                     '4.0',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     '(125 ulasan)',
                     style: TextStyle(
@@ -242,17 +251,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   ),
                 ],
               ),
-              SizedBox(height: 24),
-              
+              const SizedBox(height: 24),
+
               // Price
               Row(
                 children: [
                   Text(
                     'Rp ${widget.product.price.toStringAsFixed(0)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF667eea),
+                      // Warna diganti hijau
+                      color: primaryColor,
                     ),
                   ),
                   Text(
@@ -265,18 +275,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   ),
                 ],
               ),
-              SizedBox(height: 24),
-              
-              // Stock Info
+              const SizedBox(height: 24),
+
+              // Stock Info (Biarkan hijau/orange, ini semantik)
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: widget.product.stock > 10 
+                  color: widget.product.stock > 10
                       ? Colors.green.withOpacity(0.1)
                       : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: widget.product.stock > 10 
+                    color: widget.product.stock > 10
                         ? Colors.green.withOpacity(0.3)
                         : Colors.orange.withOpacity(0.3),
                   ),
@@ -284,26 +294,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 child: Row(
                   children: [
                     Icon(
-                      widget.product.stock > 10 
+                      widget.product.stock > 10
                           ? Icons.check_circle
                           : Icons.info,
-                      color: widget.product.stock > 10 
-                          ? Colors.green
-                          : Colors.orange,
+                      color:
+                          widget.product.stock > 10 ? Colors.green : Colors.orange,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Stok Tersedia',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             '${widget.product.stock} ${widget.product.unit} tersedia',
                             style: TextStyle(
@@ -317,10 +326,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   ],
                 ),
               ),
-              SizedBox(height: 24),
-              
+              const SizedBox(height: 24),
+
               // Description
-              Text(
+              const Text(
                 'Deskripsi Produk',
                 style: TextStyle(
                   fontSize: 18,
@@ -328,9 +337,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   color: Colors.black87,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
-                widget.product.description.isEmpty 
+                widget.product.description.isEmpty
                     ? 'Produk segar berkualitas tinggi dari produsen terpercaya. Cocok untuk kebutuhan bisnis kuliner Anda. Dijamin fresh dan higienis.'
                     : widget.product.description,
                 style: TextStyle(
@@ -339,15 +348,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   height: 1.6,
                 ),
               ),
-              SizedBox(height: 24),
-              
+              const SizedBox(height: 24),
+
               // Features
-              _buildFeatureItem(Icons.local_shipping, 'Pengiriman Cepat', 'Dikirim dalam 1-2 hari'),
-              SizedBox(height: 12),
-              _buildFeatureItem(Icons.verified, 'Kualitas Terjamin', 'Produk berkualitas premium'),
-              SizedBox(height: 12),
-              _buildFeatureItem(Icons.support_agent, 'Layanan 24/7', 'Customer service siap membantu'),
-              SizedBox(height: 100), // Space for bottom bar
+              _buildFeatureItem(Icons.local_shipping, 'Pengiriman Cepat',
+                  'Dikirim dalam 1-2 hari'),
+              const SizedBox(height: 12),
+              _buildFeatureItem(
+                  Icons.verified, 'Kualitas Terjamin', 'Produk berkualitas premium'),
+              const SizedBox(height: 12),
+              _buildFeatureItem(
+                  Icons.support_agent, 'Layanan 24/7', 'Customer service siap membantu'),
+              const SizedBox(height: 100), // Space for bottom bar
             ],
           ),
         ),
@@ -362,24 +374,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: Color(0xFF667eea).withOpacity(0.1),
+            // Warna diganti hijau
+            color: primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Color(0xFF667eea), size: 24),
+          child: Icon(icon, color: primaryColor, size: 24), // Warna diganti hijau
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: TextStyle(
@@ -398,7 +411,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
         ),
@@ -406,11 +419,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 20,
-            offset: Offset(0, -5),
+            offset: const Offset(0, -5),
           ),
         ],
       ),
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       child: SafeArea(
         child: Row(
           children: [
@@ -423,7 +436,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.remove, color: Colors.red),
+                    icon: const Icon(Icons.remove, color: Colors.red),
                     onPressed: () {
                       if (_quantity > 1) {
                         setState(() => _quantity--);
@@ -431,23 +444,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     },
                   ),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       '$_quantity',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.add, color: Color(0xFF667eea)),
+                    icon: const Icon(Icons.add, color: primaryColor), // Warna diganti hijau
                     onPressed: () {
                       if (_quantity < widget.product.stock) {
                         setState(() => _quantity++);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
+                          const SnackBar(
                             content: Text('Stok tidak mencukupi'),
                             behavior: SnackBarBehavior.floating,
                             backgroundColor: Colors.red,
@@ -459,21 +472,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 ],
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             // Add to Cart Button
             Expanded(
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                  ),
+                  // Gradien diganti warna solid hijau
+                  color: primaryColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xFF667eea).withOpacity(0.4),
+                      color: primaryColor.withOpacity(0.4), // Shadow hijau
                       blurRadius: 12,
-                      offset: Offset(0, 6),
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -485,13 +497,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                       for (int i = 0; i < _quantity; i++) {
                         cartService.add(widget.product.id);
                       }
-                      
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Row(
                             children: [
-                              Icon(Icons.check_circle, color: Colors.white),
-                              SizedBox(width: 12),
+                              const Icon(Icons.check_circle, color: Colors.white),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   '$_quantity ${widget.product.name} ditambahkan ke keranjang',
@@ -501,15 +513,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                           ),
                           backgroundColor: Colors.green,
                           behavior: SnackBarBehavior.floating,
-                          duration: Duration(seconds: 2),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
-                      
+
                       setState(() => _quantity = 1);
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                      children: const [
                         Icon(Icons.shopping_cart, color: Colors.white),
                         SizedBox(width: 12),
                         Text(

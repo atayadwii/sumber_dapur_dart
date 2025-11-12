@@ -10,7 +10,11 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  // Definisikan warna primer agar mudah digunakan kembali
+  static const Color primaryColor = Color(0xFF1ED760);
+
   int _selectedIndex = 0;
   late AnimationController _fabController;
   String _searchQuery = '';
@@ -32,19 +36,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.initState();
     _fabController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
     _fabController.forward();
     _loadProducts();
   }
 
   Future<void> _loadProducts() async {
+    // listen: false sudah benar
     final productService = Provider.of<ProductService>(context, listen: false);
     final products = await productService.getProducts();
-    setState(() {
-      _allProducts = products;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _allProducts = products;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -55,54 +62,60 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context);
+    // Kita pakai Consumer di sini agar lebih aman saat logout
+    return Consumer<AuthService>(builder: (context, auth, child) {
+      // Jika auth.currentUser null (karena baru logout),
+      // kita tampilkan loading agar tidak crash
+      if (auth.currentUser == null) {
+        // Ini adalah safety net jika RootRouter telat rebuild
+        return const Scaffold(
+            body: Center(
+                child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+        )));
+      }
 
-    return Scaffold(
-      body: _selectedIndex == 0 
-        ? _buildHomeContent(auth)
-        : _selectedIndex == 1
-        ? _buildOrdersContent()
-        : _buildProfileContent(auth),
-      bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _selectedIndex == 0 ? _buildCartFAB() : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-    );
+      return Scaffold(
+        // Latar belakang utama di-set ke putih
+        backgroundColor: Colors.white,
+        body: _selectedIndex == 0
+            ? _buildHomeContent(auth)
+            : _selectedIndex == 1
+                ? _buildOrdersContent()
+                : _buildProfileContent(auth),
+        bottomNavigationBar: _buildBottomNav(),
+        floatingActionButton: _selectedIndex == 0 ? _buildCartFAB() : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      );
+    });
   }
 
   Widget _buildHomeContent(AuthService auth) {
     final cartService = Provider.of<CartService>(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF667eea),
-            Colors.white,
-          ],
-          stops: [0.0, 0.3],
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(auth),
-            SizedBox(height: 20),
-            _buildSearchBar(),
-            SizedBox(height: 20),
-            _buildCategoryFilter(),
-            SizedBox(height: 16),
-            Expanded(child: _buildProductGrid(cartService)),
-          ],
-        ),
+    // Menghapus container gradient, diganti SafeArea
+    return SafeArea(
+      child: Column(
+        children: [
+          _buildHeader(auth),
+          const SizedBox(height: 20),
+          _buildSearchBar(),
+          const SizedBox(height: 20),
+          _buildCategoryFilter(),
+          const SizedBox(height: 16),
+          Expanded(child: _buildProductGrid(cartService)),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(AuthService auth) {
+    // Safety check jika user keburu null
+    final user = auth.currentUser;
+    if (user == null) return Container();
+
     return Padding(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           // Avatar
@@ -116,41 +129,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
                   blurRadius: 10,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Center(
               child: Text(
-                auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'U',
-                style: TextStyle(
+                user.name.substring(0, 1).toUpperCase(),
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF667eea),
+                  // Warna diubah ke hijau
+                  color: primaryColor,
                 ),
               ),
             ),
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           // Greeting
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Halo, ${auth.currentUser?.name.split(' ')[0] ?? 'Pengguna'} 👋',
-                  style: TextStyle(
+                  'Halo, ${user.name.split(' ')[0]} 👋',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    // Warna diubah ke hitam
+                    color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Mau belanja apa hari ini?',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
+                    // Warna diubah ke abu-abu
+                    color: Colors.grey[600],
                   ),
                 ),
               ],
@@ -161,15 +177,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             width: 45,
             height: 45,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              // Warna diubah ke abu-abu muda
+              color: Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
             ),
             child: Stack(
               children: [
-                Center(
+                const Center(
                   child: Icon(
                     Icons.notifications_outlined,
-                    color: Colors.white,
+                    // Warna diubah ke hitam
+                    color: Colors.black,
                     size: 24,
                   ),
                 ),
@@ -179,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
@@ -195,33 +213,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          // Latar belakang diubah ke abu-abu muda (seperti login)
+          color: Colors.grey[100],
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
         ),
         child: TextField(
           onChanged: (value) => setState(() => _searchQuery = value),
           decoration: InputDecoration(
             hintText: 'Cari produk...',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            prefixIcon: Icon(Icons.search, color: Color(0xFF667eea)),
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            // Ikon diubah ke abu-abu
+            prefixIcon: Icon(Icons.search, color: Colors.grey[700]),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear, color: Colors.grey),
+                    icon: const Icon(Icons.clear, color: Colors.grey),
                     onPressed: () => setState(() => _searchQuery = ''),
                   )
-                : Icon(Icons.tune, color: Color(0xFF667eea)),
+                // Ikon diubah ke abu-abu
+                : Icon(Icons.tune, color: Colors.grey[700]),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
         ),
       ),
@@ -233,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       height: 45,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final category = _categories[index];
@@ -241,21 +256,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = category),
             child: Container(
-              margin: EdgeInsets.only(right: 12),
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(colors: [Color(0xFF667eea), Color(0xFF764ba2)])
-                    : null,
-                color: isSelected ? null : Colors.white,
+                // Gradien dihilangkan, diganti warna solid
+                color: isSelected ? primaryColor : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: isSelected 
-                        ? Color(0xFF667eea).withOpacity(0.3)
+                    color: isSelected
+                        // Shadow disesuaikan dengan warna hijau
+                        ? primaryColor.withOpacity(0.3)
                         : Colors.black.withOpacity(0.05),
                     blurRadius: 8,
-                    offset: Offset(0, 4),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -278,9 +292,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildProductGrid(CartService cartService) {
     if (_isLoading) {
-      return Center(
+      return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
         ),
       );
     }
@@ -288,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final products = _allProducts.where((p) {
       final matchesSearch = _searchQuery.isEmpty ||
           p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      
+
       // Extract category without emoji
       String categoryFilter = _selectedCategory
           .replaceAll('🥬 ', '')
@@ -296,10 +310,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           .replaceAll('🐟 ', '')
           .replaceAll('🌾 ', '')
           .replaceAll('🥛 ', '');
-      
+
       final matchesCategory = _selectedCategory == 'Semua' ||
           p.category.toLowerCase().contains(categoryFilter.toLowerCase());
-      
+
       return matchesSearch && matchesCategory;
     }).toList();
 
@@ -307,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       return Container(
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),
           ),
@@ -317,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Produk tidak ditemukan',
                 style: TextStyle(fontSize: 18, color: Colors.grey[600]),
@@ -331,14 +345,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
         ),
       ),
       child: GridView.builder(
-        padding: EdgeInsets.all(20),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        padding: const EdgeInsets.all(20),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.75,
           crossAxisSpacing: 16,
@@ -371,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -384,10 +398,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Container(
                 height: 120,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFe0c3fc), Color(0xFF8ec5fc)],
-                  ),
-                  borderRadius: BorderRadius.only(
+                  // Gradien diganti abu-abu muda
+                  color: Colors.grey[100],
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
@@ -396,27 +409,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Icon(
                     _getCategoryIcon(product.category),
                     size: 50,
-                    color: Colors.white,
+                    // Ikon diganti warna hijau
+                    color: primaryColor,
                   ),
                 ),
               ),
             ),
             // Product Details
             Padding(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     product.unit,
                     style: TextStyle(
@@ -424,30 +438,35 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       color: Colors.grey[600],
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           'Rp ${product.price.toStringAsFixed(0)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF667eea),
+                            // Harga diganti warna hijau
+                            color: primaryColor,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       GestureDetector(
                         onTap: () {
-                          cartService.add(product.id);
+                          // Gunakan listen: false untuk aksi
+                          Provider.of<CartService>(context, listen: false)
+                              .add(product.id);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${product.name} ditambahkan ke keranjang'),
-                              duration: Duration(seconds: 1),
+                              content: Text(
+                                  '${product.name} ditambahkan ke keranjang'),
+                              duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
-                              backgroundColor: Color(0xFF667eea),
+                              // SnackBar diganti warna hijau
+                              backgroundColor: primaryColor,
                             ),
                           );
                         },
@@ -455,12 +474,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                            ),
+                            // Gradien diganti warna solid hijau
+                            color: primaryColor,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.add_shopping_cart,
                             color: Colors.white,
                             size: 18,
@@ -497,13 +515,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildCartFAB() {
+    // Di sini kita HANYA mendengarkan CartService
     final cartService = Provider.of<CartService>(context);
     final cartItems = cartService.items;
     final itemCount = cartItems.values.fold<int>(0, (sum, qty) => sum + qty);
-    
+
     return itemCount > 0
         ? ScaleTransition(
-            scale: CurvedAnimation(parent: _fabController, curve: Curves.easeOut),
+            scale:
+                CurvedAnimation(parent: _fabController, curve: Curves.easeOut),
             child: FloatingActionButton.extended(
               onPressed: () {
                 Navigator.push(
@@ -511,15 +531,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   MaterialPageRoute(builder: (_) => CartScreen()),
                 );
               },
-              backgroundColor: Color(0xFF667eea),
-              icon: Icon(Icons.shopping_cart),
+              // FAB diganti warna hijau
+              backgroundColor: primaryColor,
+              icon: const Icon(Icons.shopping_cart),
               label: Text(
                 '$itemCount Item',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           )
-        : SizedBox.shrink();
+        : const SizedBox.shrink();
   }
 
   Widget _buildBottomNav() {
@@ -530,7 +551,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, -5),
+            offset: const Offset(0, -5),
           ),
         ],
       ),
@@ -539,11 +560,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         onTap: (index) => setState(() => _selectedIndex = index),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        selectedItemColor: Color(0xFF667eea),
+        // Warna item terpilih diganti hijau
+        selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         type: BottomNavigationBarType.fixed,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
@@ -566,122 +588,113 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   // Orders Screen Content
   Widget _buildOrdersContent() {
+    // Di sini kita HANYA mendengarkan OrderService
     final orderService = Provider.of<OrderService>(context);
     final orders = orderService.orders;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF667eea), Colors.white],
-          stops: [0.0, 0.3],
+    // Mengganti Container gradient dengan Scaffold
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Pesanan Saya',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Pesanan Saya',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        child: orders.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long,
+                        size: 80, color: Colors.grey[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Belum ada pesanan',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                child: orders.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  final order = orders[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
-                            SizedBox(height: 16),
                             Text(
-                              'Belum ada pesanan',
-                              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                              'Order #${order.id.substring(0, 8)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(order.status),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                order.status,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.all(20),
-                        itemCount: orders.length,
-                        itemBuilder: (context, index) {
-                          final order = orders[index];
-                          return Container(
-                            margin: EdgeInsets.only(bottom: 16),
-                            padding: EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Order #${order.id.substring(0, 8)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: _getStatusColor(order.status),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        order.status,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Total: Rp ${order.total.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF667eea),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Total: Rp ${order.total.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            // Warna total diganti hijau
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -705,171 +718,142 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   // Profile Screen Content
   Widget _buildProfileContent(AuthService auth) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF667eea), Colors.white],
-          stops: [0.0, 0.3],
+    final user = auth.currentUser;
+
+    // Safety net tambahan
+    if (user == null) {
+      return const Center(
+          child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+      ));
+    }
+
+    // Mengganti Container gradient dengan Scaffold
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Profil',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'U',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF667eea),
-                        ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      user.name.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        // Warna avatar diganti hijau
+                        color: primaryColor,
                       ),
                     ),
                   ),
-                  SizedBox(height: 16),
-                  Text(
-                    auth.currentUser?.name ?? 'Pengguna',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          // Warna teks diganti hitam
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user.email,
+                        style: TextStyle(
+                          fontSize: 14,
+                          // Warna teks diganti abu-abu
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    auth.currentUser?.email ?? '',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  ListTile(
+                    // Warna ikon diganti hijau
+                    leading: const Icon(Icons.history, color: primaryColor),
+                    title: const Text('Riwayat Pesanan'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      setState(() => _selectedIndex = 1);
+                    },
+                  ),
+                  ListTile(
+                    // Warna ikon diganti hijau
+                    leading: const Icon(Icons.settings, color: primaryColor),
+                    title: const Text('Pengaturan'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
+                    // Logika logout ini sudah benar (anti-crash)
+                    onPressed: () {
+                      Provider.of<AuthService>(context, listen: false)
+                          .logout();
+                    },
+                    child: const Text('Logout',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    _buildProfileMenuItem(
-                      icon: Icons.person,
-                      title: 'Edit Profil',
-                      onTap: () {},
-                    ),
-                    SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.settings,
-                      title: 'Pengaturan',
-                      onTap: () {},
-                    ),
-                    SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.help_outline,
-                      title: 'Bantuan',
-                      onTap: () {},
-                    ),
-                    Spacer(),
-                    Container(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () => auth.logout(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.logout, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Keluar',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
           ),
         ],
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 45,
-          height: 45,
-          decoration: BoxDecoration(
-            color: Color(0xFF667eea).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: Color(0xFF667eea)),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-        onTap: onTap,
       ),
     );
   }

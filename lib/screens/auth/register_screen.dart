@@ -1,296 +1,382 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/mock_services.dart';
-import '../../models/models.dart';
+import '../../services/mock_services.dart'; // Sesuaikan path jika perlu
+import '../../models/models.dart'; // Pastikan ini mengimpor enum UserType
 
 class RegisterScreen extends StatefulWidget {
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
-  final nameCtrl = TextEditingController();
-  final emailCtrl = TextEditingController();
-  final phoneCtrl = TextEditingController();
-  final pwdCtrl = TextEditingController();
-  UserType _sel = UserType.Buyer;
+class _RegisterScreenState extends State<RegisterScreen> {
+  // Controller disesuaikan dengan field baru
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _roleController = TextEditingController(); // Untuk menampilkan role
+
+  UserType? _selectedRole; // Mengganti _sel, dibuat nullable
   bool _loading = false;
   bool _obscurePassword = true;
-  late AnimationController _animController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 800),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
-    _animController.forward();
-  }
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
-    _animController.dispose();
-    nameCtrl.dispose();
-    emailCtrl.dispose();
-    phoneCtrl.dispose();
-    pwdCtrl.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _roleController.dispose();
     super.dispose();
+  }
+
+  // Fungsi untuk menampilkan modal pilih role
+  void _showRoleSheet() {
+    // Role yang dipilih sementara di dalam modal
+    UserType? tempRole = _selectedRole;
+    
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        // StatefulBuilder diperlukan agar Radio button di dalam modal bisa di-update
+        return StatefulBuilder(
+          builder: (modalContext, modalSetState) {
+            return Container(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle (garis abu-abu)
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Select Role',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  
+                  // Opsi Penjual (Producer)
+                  _buildRoleOption(
+                    title: 'Penjual',
+                    value: UserType.Producer,
+                    groupValue: tempRole,
+                    onChanged: (val) {
+                      modalSetState(() => tempRole = val);
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  
+                  // Opsi Pembeli (Buyer)
+                  _buildRoleOption(
+                    title: 'Pembeli',
+                    value: UserType.Buyer, // Menggunakan UserType.Buyer dari kode lama Anda
+                    groupValue: tempRole,
+                    onChanged: (val) {
+                      modalSetState(() => tempRole = val);
+                    },
+                  ),
+                  SizedBox(height: 24),
+                  
+                  // Tombol Select
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Update state di halaman utama
+                        setState(() {
+                          _selectedRole = tempRole;
+                          if (_selectedRole == UserType.Producer) {
+                            _roleController.text = 'Penjual';
+                          } else if (_selectedRole == UserType.Buyer) {
+                            _roleController.text = 'Pembeli';
+                          }
+                        });
+                        Navigator.pop(ctx); // Tutup modal
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF1ED760), // Warna hijau baru
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Select',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Helper untuk opsi di modal
+  Widget _buildRoleOption({
+    required String title,
+    required UserType value,
+    required UserType? groupValue,
+    required void Function(UserType?) onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.w500)),
+        trailing: Radio<UserType>(
+          value: value,
+          groupValue: groupValue,
+          onChanged: onChanged,
+          activeColor: Color(0xFF1ED760),
+        ),
+        onTap: () => onChanged(value),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context);
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF667eea),
-              Color(0xFF764ba2),
-              Color(0xFFF093FB),
-            ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.close, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Create account',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Back button
-                      IconButton(
-                        icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      SizedBox(height: 20),
-                      
-                      // Header
-                      Text(
-                        'Buat Akun',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Bergabunglah dengan komunitas bisnis kami',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      SizedBox(height: 40),
-                      
-                      // Form Container
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        padding: EdgeInsets.all(24),
-                        child: Column(
-                          children: [
-                            // Nama Field
-                            _buildTextField(
-                              controller: nameCtrl,
-                              label: 'Nama Lengkap',
-                              icon: Icons.person_outline,
-                              hint: 'Masukkan nama lengkap Anda',
-                            ),
-                            SizedBox(height: 20),
-                            
-                            // Email Field
-                            _buildTextField(
-                              controller: emailCtrl,
-                              label: 'Email',
-                              icon: Icons.email_outlined,
-                              hint: 'contoh@email.com',
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            SizedBox(height: 20),
-                            
-                            // Phone Field
-                            _buildTextField(
-                              controller: phoneCtrl,
-                              label: 'Nomor HP',
-                              icon: Icons.phone_outlined,
-                              hint: '08xxxxxxxxxx',
-                              keyboardType: TextInputType.phone,
-                            ),
-                            SizedBox(height: 20),
-                            
-                            // Password Field
-                            _buildTextField(
-                              controller: pwdCtrl,
-                              label: 'Password',
-                              icon: Icons.lock_outline,
-                              hint: 'Minimal 6 karakter',
-                              obscureText: _obscurePassword,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                  color: Colors.grey[600],
-                                ),
-                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                              ),
-                            ),
-                            SizedBox(height: 24),
-                            
-                            // User Type Selector
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.grey[300]!),
-                              ),
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.business_center, color: Color(0xFF667eea)),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<UserType>(
-                                        value: _sel,
-                                        isExpanded: true,
-                                        icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF667eea)),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        items: [
-                                          DropdownMenuItem(
-                                            child: Text('🛒  Pembeli (Pelaku Bisnis)'),
-                                            value: UserType.Buyer,
-                                          ),
-                                          DropdownMenuItem(
-                                            child: Text('🏭  Produsen'),
-                                            value: UserType.Producer,
-                                          ),
-                                        ],
-                                        onChanged: (v) => setState(() => _sel = v!),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 32),
-                            
-                            // Register Button
-                            _loading
-                                ? Container(
-                                    height: 56,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    width: double.infinity,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Color(0xFF667eea).withOpacity(0.4),
-                                          blurRadius: 12,
-                                          offset: Offset(0, 6),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(16),
-                                        onTap: () async {
-                                          setState(() => _loading = true);
-                                          await auth.register(
-                                            nameCtrl.text.trim(),
-                                            emailCtrl.text.trim(),
-                                            phoneCtrl.text.trim(),
-                                            pwdCtrl.text,
-                                            _sel,
-                                          );
-                                          setState(() => _loading = false);
-                                          Navigator.of(context).pop();
-                                        },
-                                        child: Center(
-                                          child: Text(
-                                            'Daftar Sekarang',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                      
-                      // Login Link
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Sudah punya akun? ',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Text(
-                                'Masuk',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 20),
+                
+                // --- Form ---
+                _buildTextField(
+                  controller: _nameController,
+                  hintText: 'Name',
+                ),
+                SizedBox(height: 20),
+                
+                _buildTextField(
+                  controller: _emailController,
+                  hintText: 'Email',
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                SizedBox(height: 20),
+                
+                // Field "Select Role"
+                _buildTextField(
+                  controller: _roleController,
+                  hintText: 'Select Role',
+                  readOnly: true, // Tidak bisa diketik
+                  onTap: _showRoleSheet, // Panggil modal
+                  suffixIcon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
+                ),
+                SizedBox(height: 20),
+                
+                _buildTextField(
+                  controller: _passwordController,
+                  hintText: 'Password',
+                  obscureText: _obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: Colors.grey[600],
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
-              ),
+                SizedBox(height: 20),
+                
+                _buildTextField(
+                  controller: _confirmPasswordController,
+                  hintText: 'Confirm password',
+                  obscureText: _obscureConfirmPassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: Colors.grey[600],
+                    ),
+                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  ),
+                ),
+                SizedBox(height: 40),
+
+                // Tombol Create Account
+                _loading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1ED760)),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        // ======================================================
+                        // BLOK INI TELAH DIPERBAIKI (onPressed)
+                        // ======================================================
+                        onPressed: () async {
+                          // --- Logika Registrasi ---
+                          
+                          // 1. Validasi field teks
+                          if (_nameController.text.isEmpty ||
+                              _emailController.text.isEmpty ||
+                              _passwordController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Nama, email, dan password harus diisi'),
+                              backgroundColor: Colors.red,
+                            ));
+                            return;
+                          }
+                          
+                          // 2. Validasi role
+                          if (_selectedRole == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Silakan pilih role Anda (Penjual/Pembeli)'),
+                              backgroundColor: Colors.red,
+                            ));
+                            return; // Berhenti di sini jika role belum dipilih
+                          }
+                          
+                          // 3. Validasi password
+                          if (_passwordController.text != _confirmPasswordController.text) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Password tidak cocok'),
+                              backgroundColor: Colors.red,
+                            ));
+                            return;
+                          }
+                          
+                          // --- Jika semua validasi lolos ---
+                          setState(() => _loading = true);
+                          
+                          // Panggil fungsi register dengan 5 argumen
+                          bool success = await auth.register(
+                            _nameController.text.trim(),     // 1. name
+                            _emailController.text.trim(),    // 2. email
+                            "",                              // 3. phone (placeholder)
+                            _passwordController.text,        // 4. password
+                            _selectedRole!,                  // 5. role
+                          );
+                          
+                          setState(() => _loading = false);
+                          
+                          if (success && mounted) {
+                            // Kembali ke login jika berhasil
+                            Navigator.pop(context); 
+                          } else {
+                            // Tampilkan error jika gagal
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Registrasi gagal. Coba lagi.'),
+                              backgroundColor: Colors.red,
+                            ));
+                          }
+                        },
+                        // ======================================================
+                        // AKHIR DARI BLOK YANG DIPERBAIKI
+                        // ======================================================
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF1ED760),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Create account',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                
+                SizedBox(height: 30),
+
+                // Link Sign In
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Already have an account? ",
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 15,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        // Kembali ke halaman login
+                        Navigator.pop(context); 
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Sign in',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
             ),
           ),
         ),
@@ -298,36 +384,34 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     );
   }
 
+  // Helper widget untuk TextField (gaya baru)
   Widget _buildTextField({
     required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required String hint,
+    required String hintText,
     bool obscureText = false,
     TextInputType? keyboardType,
     Widget? suffixIcon,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        style: TextStyle(fontSize: 16),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          labelStyle: TextStyle(color: Color(0xFF667eea)),
-          hintStyle: TextStyle(color: Colors.grey[400]),
-          prefixIcon: Icon(icon, color: Color(0xFF667eea)),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      readOnly: readOnly,
+      onTap: onTap,
+      style: TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(color: Colors.grey[500]),
+        filled: true,
+        fillColor: Colors.grey[100],
+        suffixIcon: suffixIcon,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
     );
   }

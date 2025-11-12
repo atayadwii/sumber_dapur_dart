@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/mock_services.dart'; 
-import '../models/models.dart'; 
+import '../services/mock_services.dart';
+import '../models/models.dart';
 
 class CartScreen extends StatefulWidget {
   @override
   State<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateMixin {
+class _CartScreenState extends State<CartScreen>
+    with SingleTickerProviderStateMixin {
+  // Definisikan warna primer
+  static const Color primaryColor = Color(0xFF1ED760);
+
   bool _isCheckingOut = false;
   late AnimationController _animController;
 
@@ -17,7 +21,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 600),
     );
     _animController.forward();
   }
@@ -28,15 +32,36 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  // ===================================================================
+  // FUNGSI INI TELAH DIPERBAIKI
+  // ===================================================================
   Future<void> _handleCheckout(
     BuildContext context,
     CartService cart,
     ProductService ps,
-    AuthService auth,
+    AuthService auth, // AuthService sudah di-pass ke sini
     OrderService orderService,
     Map<String, List<OrderItem>> itemsByProducer,
   ) async {
     if (_isCheckingOut) return;
+
+    // 1. Validasi token (tetap penting)
+    if (!auth.isLoggedIn) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi Anda telah habis. Silakan login ulang.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Simpan context SEBELUM await
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
 
     setState(() {
       _isCheckingOut = true;
@@ -48,25 +73,28 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         final producerId = entry.key;
         final items = entry.value;
 
+        // 2. PANGGIL createOrder TANPA TOKEN
+        //    (OrderService sudah punya token dari ProxyProvider)
         await orderService.createOrder(
           buyerId: auth.currentUser!.id,
           producerId: producerId,
           items: items,
+          // token: token, <-- BARIS INI DIHAPUS
         );
       }
 
-      // Update stock
+      // Update stock (Ini harusnya juga memanggil API, tapi kita biarkan dulu)
       for (var item in cart.items.entries) {
         await ps.updateStock(item.key, -item.value);
       }
-      
+
       cart.clear();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Row(
-              children: [
+              children: const [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
                 Expanded(child: Text('Pesanan berhasil dibuat!')),
@@ -74,25 +102,27 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-        Navigator.of(context).pop();
+        navigator.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.error, color: Colors.white),
-                SizedBox(width: 12),
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
                 Expanded(child: Text('Checkout gagal: $e')),
               ],
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -104,104 +134,96 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       }
     }
   }
+  // ===================================================================
+  // AKHIR DARI FUNGSI YANG DIPERBAUI
+  // ===================================================================
 
   @override
   Widget build(BuildContext context) {
     return Consumer<CartService>(
       builder: (context, cart, child) {
         final ps = context.read<ProductService>();
+        // Kita butuh 'auth' di sini untuk di-pass ke _handleCheckout
         final auth = context.read<AuthService>();
         final orderService = context.read<OrderService>();
 
         if (cart.items.isEmpty) {
           return Scaffold(
-            body: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF667eea), Colors.white],
-                  stops: [0.0, 0.3],
-                ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    _buildAppBar(context, 0),
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.shopping_cart_outlined,
-                                size: 60,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                            SizedBox(height: 24),
-                            Text(
-                              'Keranjang Kosong',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Yuk, mulai belanja sekarang!',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: () => Navigator.of(context).pop(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF667eea),
-                                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              icon: Icon(Icons.shopping_bag, color: Colors.white),
-                              label: Text(
-                                'Mulai Belanja',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
+            // Ganti background
+            backgroundColor: Colors.white,
+            appBar: _buildAppBar(context, 0),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      // Ganti warna background
+                      color: Colors.grey[100],
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 60,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Keranjang Kosong',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Yuk, mulai belanja sekarang!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      // Ganti warna tombol
+                      backgroundColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ],
-                ),
+                    icon: const Icon(Icons.shopping_bag, color: Colors.white),
+                    label: const Text(
+                      'Mulai Belanja',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         }
 
-        final List<Future<Product>> productFutures = cart.items.keys.map((productId) {
+        final List<Future<Product>> productFutures =
+            cart.items.keys.map((productId) {
           return ps.findById(productId);
         }).toList();
 
@@ -210,28 +232,12 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Scaffold(
-                body: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xFF667eea), Colors.white],
-                      stops: [0.0, 0.3],
-                    ),
-                  ),
-                  child: SafeArea(
-                    child: Column(
-                      children: [
-                        _buildAppBar(context, cart.items.length),
-                        Expanded(
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                backgroundColor: Colors.white,
+                appBar: _buildAppBar(context, cart.items.length),
+                body: const Center(
+                  child: CircularProgressIndicator(
+                    // Ganti warna loading
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                   ),
                 ),
               );
@@ -239,41 +245,25 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
             if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
               return Scaffold(
-                body: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xFF667eea), Colors.white],
-                      stops: [0.0, 0.3],
-                    ),
-                  ),
-                  child: SafeArea(
-                    child: Column(
-                      children: [
-                        _buildAppBar(context, cart.items.length),
-                        Expanded(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Gagal memuat keranjang',
-                                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                backgroundColor: Colors.white,
+                appBar: _buildAppBar(context, cart.items.length),
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 80, color: Colors.red[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Gagal memuat keranjang',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                    ],
                   ),
                 ),
               );
             }
-            
+
             final products = snapshot.data!;
             double total = 0;
             final Map<String, List<OrderItem>> itemsByProducer = {};
@@ -301,67 +291,46 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             }
 
             return Scaffold(
+              backgroundColor: Colors.white,
+              appBar: _buildAppBar(context, validProducts.length),
               body: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF667eea), Colors.white],
-                    stops: [0.0, 0.3],
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    children: [
-                      _buildAppBar(context, validProducts.length),
-                      SizedBox(height: 8),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(30),
-                              topRight: Radius.circular(30),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: ListView.builder(
-                                  padding: EdgeInsets.all(20),
-                                  itemCount: validProducts.length,
-                                  itemBuilder: (context, index) {
-                                    final product = validProducts[index];
-                                    final qty = cart.items[product.id]!;
-                                    final subtotal = product.price * qty;
-                                    
-                                    return FadeTransition(
-                                      opacity: _animController,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: Offset(0, 0.2),
-                                          end: Offset.zero,
-                                        ).animate(CurvedAnimation(
-                                          parent: _animController,
-                                          curve: Interval(
-                                            index * 0.1,
-                                            (index * 0.1) + 0.3,
-                                            curve: Curves.easeOut,
-                                          ),
-                                        )),
-                                        child: _buildCartItem(product, qty, subtotal, cart),
-                                      ),
-                                    );
-                                  },
+                // Ganti warna background body
+                color: Colors.grey[50],
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(20),
+                        itemCount: validProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = validProducts[index];
+                          final qty = cart.items[product.id]!;
+                          final subtotal = product.price * qty;
+
+                          return FadeTransition(
+                            opacity: _animController,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.2),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: _animController,
+                                curve: Interval(
+                                  index * 0.1,
+                                  (index * 0.1) + 0.3,
+                                  curve: Curves.easeOut,
                                 ),
-                              ),
-                              _buildBottomSection(total, cart, ps, auth, orderService, itemsByProducer),
-                            ],
-                          ),
-                        ),
+                              )),
+                              child:
+                                  _buildCartItem(product, qty, subtotal, cart),
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                    _buildBottomSection(
+                        total, cart, ps, auth, orderService, itemsByProducer),
+                  ],
                 ),
               ),
             );
@@ -371,71 +340,53 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAppBar(BuildContext context, int itemCount) {
-    return Padding(
-      padding: EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Keranjang Belanja',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                if (itemCount > 0)
-                  Text(
-                    '$itemCount Item',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (itemCount > 0)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '$itemCount',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-        ],
+  AppBar _buildAppBar(BuildContext context, int itemCount) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.of(context).pop(),
       ),
+      title: const Text(
+        'Keranjang',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
+      actions: [
+        if (itemCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(right: 20.0),
+            child: Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$itemCount',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildCartItem(Product product, int qty, double subtotal, CartService cart) {
+  Widget _buildCartItem(
+      Product product, int qty, double subtotal, CartService cart) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -443,12 +394,12 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // Product Image/Icon
@@ -456,18 +407,18 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFe0c3fc), Color(0xFF8ec5fc)],
-                ),
+                // Ganti warna background
+                color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 _getCategoryIcon(product.category),
                 size: 40,
-                color: Colors.white,
+                // Ganti warna ikon
+                color: primaryColor,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             // Product Details
             Expanded(
               child: Column(
@@ -475,14 +426,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                 children: [
                   Text(
                     product.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Rp ${product.price.toStringAsFixed(0)}/${product.unit}',
                     style: TextStyle(
@@ -490,19 +441,20 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       color: Colors.grey[600],
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Subtotal: Rp ${subtotal.toStringAsFixed(0)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF667eea),
+                      // Ganti warna subtotal
+                      color: primaryColor,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             // Quantity Controls
             Container(
               decoration: BoxDecoration(
@@ -512,28 +464,30 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
               child: Column(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.add, size: 20),
-                    color: Color(0xFF667eea),
+                    icon: const Icon(Icons.add, size: 20),
+                    // Ganti warna ikon
+                    color: primaryColor,
                     onPressed: () => cart.add(product.id),
-                    padding: EdgeInsets.all(4),
-                    constraints: BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
                   ),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: Text(
                       '$qty',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.remove, size: 20),
+                    icon: const Icon(Icons.remove, size: 20),
                     color: Colors.red,
                     onPressed: () => cart.remove(product.id),
-                    padding: EdgeInsets.all(4),
-                    constraints: BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -548,14 +502,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     double total,
     CartService cart,
     ProductService ps,
-    AuthService auth,
+    AuthService auth, // auth sudah di-pass ke sini
     OrderService orderService,
     Map<String, List<OrderItem>> itemsByProducer,
   ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
         ),
@@ -563,11 +517,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 20,
-            offset: Offset(0, -5),
+            offset: const Offset(0, -5),
           ),
         ],
       ),
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -575,8 +529,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             // Summary Row
             Row(
               children: [
-                Icon(Icons.receipt_long, color: Color(0xFF667eea)),
-                SizedBox(width: 12),
+                // Ganti warna ikon
+                const Icon(Icons.receipt_long, color: primaryColor),
+                const SizedBox(width: 12),
                 Text(
                   'Ringkasan Belanja',
                   style: TextStyle(
@@ -587,7 +542,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -600,20 +555,20 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                 ),
                 Text(
                   '${cart.items.values.fold<int>(0, (sum, qty) => sum + qty)} Item',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Divider(),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
+            const Divider(),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Total Harga:',
                   style: TextStyle(
                     fontSize: 18,
@@ -622,29 +577,30 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                 ),
                 Text(
                   'Rp ${total.toStringAsFixed(0)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF667eea),
+                    // Ganti warna total
+                    color: primaryColor,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             // Checkout Button
             Container(
               width: double.infinity,
               height: 56,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                ),
+                // Ganti gradien ke warna solid
+                color: primaryColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF667eea).withOpacity(0.4),
+                    // Ganti warna shadow
+                    color: primaryColor.withOpacity(0.4),
                     blurRadius: 12,
-                    offset: Offset(0, 6),
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
@@ -658,13 +614,13 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                             context,
                             cart,
                             ps,
-                            auth,
+                            auth, // Pastikan auth di-pass
                             orderService,
                             itemsByProducer,
                           ),
                   child: Center(
                     child: _isCheckingOut
-                        ? SizedBox(
+                        ? const SizedBox(
                             height: 24,
                             width: 24,
                             child: CircularProgressIndicator(
@@ -674,8 +630,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                           )
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.shopping_bag_outlined, color: Colors.white),
+                            children: const [
+                              Icon(Icons.shopping_bag_outlined,
+                                  color: Colors.white),
                               SizedBox(width: 12),
                               Text(
                                 'Checkout Sekarang',

@@ -1,29 +1,22 @@
 import 'package:flutter/foundation.dart';
 
-// ===========================
-// Enums
-// ===========================
 
 enum UserType { Buyer, Producer }
 
 enum OrderStatus {
-  pending, // Menunggu Konfirmasi
-  processing, // Diproses
-  shipping, // Dikirim
-  completed, // Selesai
-  cancelled, // Dibatalkan
+  pending, 
+  processing, 
+  shipping, 
+  completed, 
+  cancelled, 
 }
 
 enum PaymentMethod {
-  cash, // Tunai
-  bankTransfer, // Transfer Bank
-  eWallet, // E-Wallet
-  cod, // Cash on Delivery
+  cash, 
+  bankTransfer,
+  eWallet, 
+  cod, 
 }
-
-// ===========================
-// User Model
-// ===========================
 
 class UserModel {
   final String id;
@@ -48,11 +41,9 @@ class UserModel {
     this.lastLoginAt,
   }) : this.createdAt = createdAt ?? DateTime.now();
 
-  // Helper methods
+ 
   bool get isBuyer => type == UserType.Buyer;
   bool get isProducer => type == UserType.Producer;
-
-  // Copy with method for immutability
   UserModel copyWith({
     String? id,
     String? name,
@@ -77,7 +68,6 @@ class UserModel {
     );
   }
 
-  // JSON serialization
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -107,9 +97,6 @@ class UserModel {
   }
 }
 
-// ===========================
-// Product Model
-// ===========================
 
 class Product {
   final String id;
@@ -150,7 +137,6 @@ class Product {
     this.producerName,
   }) : this.createdAt = createdAt ?? DateTime.now();
 
-  // Helper methods
   bool get inStock => stock > 0;
   bool get lowStock => stock > 0 && stock <= 10;
   bool get outOfStock => stock == 0;

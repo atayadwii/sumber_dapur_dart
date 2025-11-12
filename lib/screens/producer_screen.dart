@@ -8,7 +8,11 @@ class ProducerDashboard extends StatefulWidget {
   _ProducerDashboardState createState() => _ProducerDashboardState();
 }
 
-class _ProducerDashboardState extends State<ProducerDashboard> with SingleTickerProviderStateMixin {
+class _ProducerDashboardState extends State<ProducerDashboard>
+    with SingleTickerProviderStateMixin {
+  // Definisikan warna primer
+  static const Color primaryColor = Color(0xFF1ED760);
+
   int _selectedIndex = 0;
   late AnimationController _animController;
 
@@ -17,7 +21,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 800),
     );
     _animController.forward();
   }
@@ -30,79 +34,89 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _selectedIndex == 0
-          ? _buildDashboardContent()
-          : _selectedIndex == 1
-          ? _buildProductsContent()
-          : _buildProfileContent(),
-      bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _selectedIndex == 1 ? _buildAddProductFAB() : null,
-    );
+    // Gunakan Consumer untuk keamanan saat logout
+    return Consumer<AuthService>(builder: (context, auth, child) {
+      if (auth.currentUser == null) {
+        return const Scaffold(
+            body: Center(
+                child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+        )));
+      }
+
+      return Scaffold(
+        backgroundColor: Colors.white, // Latar belakang utama putih
+        body: _selectedIndex == 0
+            ? _buildDashboardContent(auth)
+            : _selectedIndex == 1
+                ? _buildProductsContent(auth)
+                : _buildProfileContent(auth),
+        bottomNavigationBar: _buildBottomNav(),
+        floatingActionButton: _selectedIndex == 1 ? _buildAddProductFAB() : null,
+      );
+    });
   }
 
-  Widget _buildDashboardContent() {
-    final auth = Provider.of<AuthService>(context);
-    final ps = Provider.of<ProductService>(context);
-    final orderService = Provider.of<OrderService>(context);
-    final myProducts = ps.productsByProducer(auth.currentUser!.id);
-    final myOrders = orderService.orders.where((o) => o.producerId == auth.currentUser!.id).toList();
+  // ===========================================================================
+  // Section 1: Dashboard
+  // ===========================================================================
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF667eea), Colors.white],
-          stops: [0.0, 0.4],
+  Widget _buildDashboardContent(AuthService auth) {
+    // Panggil 'watch' di sini agar UI update saat list produk/order berubah
+    final ps = context.watch<ProductService>();
+    final orderService = context.watch<OrderService>();
+    
+    final myProducts = ps.productsByProducer(auth.currentUser!.id);
+    final myOrders = orderService.orders
+        .where((o) => o.producerId == auth.currentUser!.id)
+        .toList();
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(auth),
-            SizedBox(height: 20),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Statistik Bisnis',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _buildStatsCards(myProducts, myOrders),
-                      SizedBox(height: 24),
-                      Text(
-                        'Pesanan Terbaru',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _buildRecentOrders(myOrders),
-                    ],
-                  ),
+      body: Container(
+        color: Colors.grey[50], // Latar belakang abu-abu
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(auth), // Header di-pindah ke sini
+              const SizedBox(height: 24),
+              const Text(
+                'Statistik Bisnis',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              _buildStatsCards(myProducts, myOrders),
+              const SizedBox(height: 24),
+              const Text(
+                'Pesanan Terbaru',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildRecentOrders(myOrders),
+            ],
+          ),
         ),
       ),
     );
@@ -110,7 +124,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
 
   Widget _buildHeader(AuthService auth) {
     return Padding(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.only(top: 0),
       child: Row(
         children: [
           Container(
@@ -123,22 +137,22 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
                   blurRadius: 10,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Center(
               child: Text(
                 auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'P',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF667eea),
+                  color: primaryColor, // Diubah ke hijau
                 ),
               ),
             ),
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,47 +161,16 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
                   'Selamat Datang! 👋',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.grey[600], // Diubah ke abu-abu
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   auth.currentUser?.name ?? 'Produsen',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
+                    color: Colors.black, // Diubah ke hitam
                   ),
                 ),
               ],
@@ -202,11 +185,12 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
     final totalProducts = products.length;
     final totalStock = products.fold<int>(0, (sum, p) => sum + p.stock);
     final totalRevenue = orders.fold<double>(0, (sum, o) => sum + o.total);
-    final pendingOrders = orders.where((o) => o.status == 'Menunggu Konfirmasi').length;
+    final pendingOrders =
+        orders.where((o) => o.status == 'Menunggu Konfirmasi').length;
 
     return GridView.count(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
@@ -216,29 +200,21 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
           icon: Icons.inventory_2,
           title: 'Total Produk',
           value: totalProducts.toString(),
-          color: Color(0xFF667eea),
-          gradient: [Color(0xFF667eea), Color(0xFF764ba2)],
         ),
         _buildStatCard(
           icon: Icons.trending_up,
           title: 'Total Stok',
           value: totalStock.toString(),
-          color: Color(0xFF11998e),
-          gradient: [Color(0xFF11998e), Color(0xFF38ef7d)],
         ),
         _buildStatCard(
           icon: Icons.attach_money,
           title: 'Pendapatan',
           value: 'Rp ${(totalRevenue / 1000).toStringAsFixed(0)}K',
-          color: Color(0xFFf093fb),
-          gradient: [Color(0xFFf093fb), Color(0xFFf5576c)],
         ),
         _buildStatCard(
           icon: Icons.pending_actions,
           title: 'Pending',
           value: pendingOrders.toString(),
-          color: Color(0xFFfa709a),
-          gradient: [Color(0xFFfa709a), Color(0xFFfee140)],
         ),
       ],
     );
@@ -248,22 +224,21 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
     required IconData icon,
     required String title,
     required String value,
-    required Color color,
-    required List<Color> gradient,
   }) {
+    // Style kartu diubah jadi putih
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradient),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -271,27 +246,27 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
             width: 45,
             height: 45,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
+              color: primaryColor.withOpacity(0.1), // Background ikon hijau
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(icon, color: primaryColor, size: 24), // Ikon hijau
           ),
-          Spacer(),
+          const Spacer(),
           Text(
             title,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.black,
             ),
           ),
         ],
@@ -312,7 +287,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.receipt_long, size: 50, color: Colors.grey[300]),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'Belum ada pesanan',
                 style: TextStyle(color: Colors.grey[600]),
@@ -326,8 +301,8 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
     return Column(
       children: orders.take(3).map((order) {
         return Container(
-          margin: EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -335,7 +310,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -345,30 +320,28 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                  ),
+                  color: primaryColor.withOpacity(0.1), // Ikon hijau
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.shopping_bag, color: Colors.white),
+                child: const Icon(Icons.shopping_bag, color: primaryColor),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Order #${order.id.substring(0, 8)}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Rp ${order.total.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        color: Color(0xFF667eea),
+                      style: const TextStyle(
+                        color: primaryColor, // Harga hijau
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -376,7 +349,8 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: _getStatusColor(order.status).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -397,100 +371,87 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
     );
   }
 
-  Widget _buildProductsContent() {
-    final auth = Provider.of<AuthService>(context);
-    final ps = Provider.of<ProductService>(context);
+  // ===========================================================================
+  // Section 2: Produk
+  // ===========================================================================
+
+  Widget _buildProductsContent(AuthService auth) {
+    // Gunakan 'watch' agar UI di-update saat produk baru ditambahkan
+    final ps = context.watch<ProductService>();
     final myProducts = ps.productsByProducer(auth.currentUser!.id);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF667eea), Colors.white],
-          stops: [0.0, 0.3],
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Produk Saya',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Text(
-                    'Produk Saya',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Spacer(),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${myProducts.length} Item',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20.0),
+            child: Center(
               child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${myProducts.length} Item',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: myProducts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.inventory_2, size: 80, color: Colors.grey[300]),
-                            SizedBox(height: 16),
-                            Text(
-                              'Belum ada produk',
-                              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Tap tombol + untuk menambah produk',
-                              style: TextStyle(color: Colors.grey[500]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.all(20),
-                        itemCount: myProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = myProducts[index];
-                          return _buildProductCard(product, ps);
-                        },
-                      ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+      body: Container(
+        color: Colors.grey[50],
+        child: myProducts.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inventory_2, size: 80, color: Colors.grey[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Belum ada produk',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap tombol + untuk menambah produk',
+                      style: TextStyle(color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: myProducts.length,
+                itemBuilder: (context, index) {
+                  final product = myProducts[index];
+                  return _buildProductCard(product, ps);
+                },
+              ),
       ),
     );
   }
 
   Widget _buildProductCard(Product product, ProductService ps) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -498,42 +459,40 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Container(
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFe0c3fc), Color(0xFF8ec5fc)],
-                ),
+                color: Colors.grey[100], // Latar belakang gambar abu-abu
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 _getCategoryIcon(product.category),
-                color: Colors.white,
+                color: primaryColor, // Ikon hijau
                 size: 35,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Stok: ${product.stock} ${product.unit}',
                     style: TextStyle(
@@ -541,11 +500,11 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
                       fontSize: 13,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Rp ${product.price.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      color: Color(0xFF667eea),
+                    style: const TextStyle(
+                      color: primaryColor, // Harga hijau
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -556,12 +515,14 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
             Column(
               children: [
                 IconButton(
-                  icon: Icon(Icons.add_circle, color: Colors.green),
+                  icon: const Icon(Icons.add_circle, color: Colors.green),
                   onPressed: () async {
+                    // Gunakan context yang aman
+                    final messenger = ScaffoldMessenger.of(context);
                     await ps.updateStock(product.id, 5);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                      messenger.showSnackBar(
+                        const SnackBar(
                           content: Text('Stok ditambah 5'),
                           behavior: SnackBarBehavior.floating,
                           backgroundColor: Colors.green,
@@ -571,12 +532,14 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
                   },
                 ),
                 IconButton(
-                  icon: Icon(Icons.remove_circle, color: Colors.red),
+                  icon: const Icon(Icons.remove_circle, color: Colors.red),
                   onPressed: () async {
+                    // Gunakan context yang aman
+                    final messenger = ScaffoldMessenger.of(context);
                     await ps.updateStock(product.id, -5);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                      messenger.showSnackBar(
+                        const SnackBar(
                           content: Text('Stok dikurangi 5'),
                           behavior: SnackBarBehavior.floating,
                           backgroundColor: Colors.red,
@@ -593,155 +556,161 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
     );
   }
 
-  Widget _buildProfileContent() {
-    final auth = Provider.of<AuthService>(context);
-    
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF667eea), Colors.white],
-          stops: [0.0, 0.3],
+  // ===========================================================================
+  // Section 3: Profil
+  // ===========================================================================
+
+  Widget _buildProfileContent(AuthService auth) {
+    final user = auth.currentUser;
+    if (user == null) {
+      return const Center(
+          child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+      ));
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Profil',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      user.name.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor, // Ikon hijau
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user.email,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
                 children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: Offset(0, 10),
+                  _buildProfileMenuItem(
+                    icon: Icons.person,
+                    title: 'Edit Profil',
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildProfileMenuItem(
+                    icon: Icons.store,
+                    title: 'Info Toko',
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildProfileMenuItem(
+                    icon: Icons.settings,
+                    title: 'Pengaturan',
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildProfileMenuItem(
+                    icon: Icons.help_outline,
+                    title: 'Bantuan',
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Perbaikan bug logout (anti-crash)
+                      Provider.of<AuthService>(context, listen: false).logout();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.logout, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          'Keluar',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        auth.currentUser?.name.substring(0, 1).toUpperCase() ?? 'P',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF667eea),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    auth.currentUser?.name ?? 'Produsen',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '🏭 Produsen',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    auth.currentUser?.email ?? '',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
                     ),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    _buildProfileMenuItem(
-                      icon: Icons.person,
-                      title: 'Edit Profil',
-                      onTap: () {},
-                    ),
-                    SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.store,
-                      title: 'Info Toko',
-                      onTap: () {},
-                    ),
-                    SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.settings,
-                      title: 'Pengaturan',
-                      onTap: () {},
-                    ),
-                    SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.help_outline,
-                      title: 'Bantuan',
-                      onTap: () {},
-                    ),
-                    Spacer(),
-                    Container(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () => auth.logout(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.logout, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Keluar',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -759,7 +728,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -768,172 +737,261 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
           width: 45,
           height: 45,
           decoration: BoxDecoration(
-            color: Color(0xFF667eea).withOpacity(0.1),
+            color: primaryColor.withOpacity(0.1), // Ikon hijau
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Color(0xFF667eea)),
+          child: Icon(icon, color: primaryColor),
         ),
         title: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
         ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );
   }
 
+  // ===========================================================================
+  // Section 4: FAB & Dialog (PERUBAHAN LOGIKA DI SINI)
+  // ===========================================================================
+
   Widget _buildAddProductFAB() {
-    final auth = Provider.of<AuthService>(context, listen: false);
-    final ps = Provider.of<ProductService>(context, listen: false);
+    // Kita pakai 'read' karena ini di dalam tombol
+    final ps = context.read<ProductService>();
 
     return FloatingActionButton.extended(
       onPressed: () {
-        _showAddProductDialog(auth, ps);
+        _showAddProductDialog(ps); // Kirim ProductService
       },
-      backgroundColor: Color(0xFF667eea),
-      icon: Icon(Icons.add),
-      label: Text(
+      backgroundColor: primaryColor, // Tombol hijau
+      icon: const Icon(Icons.add),
+      label: const Text(
         'Tambah Produk',
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  void _showAddProductDialog(AuthService auth, ProductService ps) {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    final stockController = TextEditingController();
-    String selectedCategory = 'Sayur';
-    String selectedUnit = 'kg';
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Tambah Produk Baru',
-          style: TextStyle(fontWeight: FontWeight.bold),
+  // Helper untuk text field di dialog (style baru)
+  Widget _buildDialogTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData icon,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        filled: true,
+        fillColor: Colors.grey[100],
+        prefixIcon: Icon(icon, color: Colors.grey[700]),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
-        content: SingleChildScrollView(
-          child: StatefulBuilder(
-            builder: (context, setDialogState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nama Produk',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: Icon(Icons.inventory_2),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Harga',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: Icon(Icons.attach_money),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: stockController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Stok',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: Icon(Icons.inventory),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    items: ['Sayur', 'Daging', 'Ikan', 'Bumbu', 'Susu']
-                        .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-                        .toList(),
-                    onChanged: (val) => setDialogState(() => selectedCategory = val!),
-                  ),
-                  SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: selectedUnit,
-                    decoration: InputDecoration(
-                      labelText: 'Satuan',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: Icon(Icons.straighten),
-                    ),
-                    items: ['kg', 'pcs', 'liter', 'gram']
-                        .map((unit) => DropdownMenuItem(value: unit, child: Text(unit)))
-                        .toList(),
-                    onChanged: (val) => setDialogState(() => selectedUnit = val!),
-                  ),
-                ],
-              );
-            },
-          ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.isEmpty ||
-                  priceController.text.isEmpty ||
-                  stockController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Semua field harus diisi'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              final product = Product(
-                id: 'p${DateTime.now().millisecondsSinceEpoch}',
-                producerId: auth.currentUser!.id,
-                name: nameController.text,
-                description: 'Produk berkualitas',
-                price: double.parse(priceController.text),
-                stock: int.parse(stockController.text),
-                unit: selectedUnit,
-                category: selectedCategory,
-              );
-
-              ps.addProduct(product);
-              Navigator.pop(dialogContext);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Produk berhasil ditambahkan'),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF667eea),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text('Tambah', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
+
+  // DIALOG TELAH DI-UPDATE
+  void _showAddProductDialog(ProductService ps) {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final stockController = TextEditingController();
+    
+    // TODO: Ini harusnya di-fetch dari API /kategori
+    // Untuk sekarang, kita hardcode ID-nya
+    String selectedCategoryId = '1'; // Asumsi 'Sayur' punya ID 1
+    String selectedUnit = 'kg';
+
+    // State untuk loading di dalam dialog
+    bool isDialogLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        // Gunakan StatefulBuilder agar bisa setState di dalam dialog
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title: const Text(
+                'Tambah Produk Baru',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildDialogTextField(
+                      controller: nameController,
+                      labelText: 'Nama Produk',
+                      icon: Icons.inventory_2,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogTextField(
+                      controller: priceController,
+                      labelText: 'Harga',
+                      icon: Icons.attach_money,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogTextField(
+                      controller: stockController,
+                      labelText: 'Stok',
+                      icon: Icons.inventory,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedCategoryId,
+                      decoration: InputDecoration(
+                        labelText: 'Kategori',
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon:
+                            Icon(Icons.category, color: Colors.grey[700]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      // Hardcode Kategori dan ID-nya
+                      items: [
+                        DropdownMenuItem(value: '1', child: Text('Sayur')),
+                        DropdownMenuItem(value: '2', child: Text('Daging')),
+                        DropdownMenuItem(value: '3', child: Text('Ikan')),
+                      ],
+                      onChanged: (val) =>
+                          setDialogState(() => selectedCategoryId = val!),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedUnit,
+                      decoration: InputDecoration(
+                        labelText: 'Satuan',
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon:
+                            Icon(Icons.straighten, color: Colors.grey[700]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      items: ['kg', 'pcs', 'liter', 'gram']
+                          .map((unit) =>
+                              DropdownMenuItem(value: unit, child: Text(unit)))
+                          .toList(),
+                      onChanged: (val) =>
+                          setDialogState(() => selectedUnit = val!),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: isDialogLoading ? null : () async {
+                    // Simpan context
+                    final navigator = Navigator.of(dialogContext);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    if (nameController.text.isEmpty ||
+                        priceController.text.isEmpty ||
+                        stockController.text.isEmpty) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Semua field harus diisi'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Tampilkan loading di tombol
+                    setDialogState(() => isDialogLoading = true);
+
+                    // Buat objek Product dummy (kita hanya butuh data, ID tidak penting)
+                    final product = Product(
+                      id: '', // ID akan dibuat oleh Laravel
+                      producerId: '', // producerId akan diambil dari token
+                      name: nameController.text,
+                      description: 'Produk berkualitas', // Deskripsi default
+                      price: double.parse(priceController.text),
+                      stock: int.parse(stockController.text),
+                      unit: selectedUnit,
+                      category: '', // Kategori akan diambil dari ID
+                    );
+
+                    // Panggil ProductService
+                    bool success = await ps.addProduct(product, selectedCategoryId);
+
+                    // Hentikan loading
+                    setDialogState(() => isDialogLoading = false);
+
+                    if (success) {
+                      navigator.pop(); // Tutup dialog
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Produk berhasil ditambahkan'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else {
+                      // Tetap di dialog dan tampilkan error
+                       messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Gagal menambah produk. Coba lagi.'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor, // Tombol hijau
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: isDialogLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Tambah', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ===========================================================================
+  // Section 5: Helper & Bottom Nav
+  // ===========================================================================
 
   Widget _buildBottomNav() {
     return Container(
@@ -943,7 +1001,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, -5),
+            offset: const Offset(0, -5),
           ),
         ],
       ),
@@ -952,11 +1010,11 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
         onTap: (index) => setState(() => _selectedIndex = index),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        selectedItemColor: Color(0xFF667eea),
+        selectedItemColor: primaryColor, // Warna hijau
         unselectedItemColor: Colors.grey,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         type: BottomNavigationBarType.fixed,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard),
@@ -970,7 +1028,7 @@ class _ProducerDashboardState extends State<ProducerDashboard> with SingleTicker
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
-            label: 'label: Profil',
+            label: 'Profil',
           ),
         ],
       ),
