@@ -98,6 +98,10 @@ class UserModel {
 }
 
 
+// ===========================
+// Product Model (DIPERBAIKI)
+// ===========================
+
 class Product {
   final String id;
   final String producerId;
@@ -107,7 +111,7 @@ class Product {
   int stock;
   String unit;
   String category;
-  String imageUrl;
+  String? imageUrl; // <-- DIBUAT NULLABLE (String?)
   double? rating;
   int reviewCount;
   bool isAvailable;
@@ -126,7 +130,7 @@ class Product {
     required this.stock,
     required this.unit,
     required this.category,
-    this.imageUrl = '',
+    this.imageUrl, // <-- TIDAK ADA DEFAULT KOSONG
     this.rating,
     this.reviewCount = 0,
     this.isAvailable = true,
@@ -225,7 +229,7 @@ class Product {
       stock: json['stock'],
       unit: json['unit'],
       category: json['category'],
-      imageUrl: json['imageUrl'] ?? '',
+      imageUrl: json['imageUrl'] ?? null, // <-- AMAN: null jika tidak ada
       rating: json['rating']?.toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
       isAvailable: json['isAvailable'] ?? true,

@@ -368,6 +368,34 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildProductCard(Product product, CartService cartService) {
+    // Tentukan apakah ada gambar yang valid
+    final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
+
+    Widget imageWidget;
+    if (hasImage) {
+      // Gunakan Image.network jika URL tersedia
+      imageWidget = ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        child: Image.network(
+          product.imageUrl!,
+          height: 120,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category), // Fallback jika gagal load
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+          },
+        ),
+      );
+    } else {
+      // Placeholder ikon jika tidak ada URL
+      imageWidget = _buildIconPlaceholder(product.category);
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -392,27 +420,20 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image with Hero animation
+            // Product Image Section
             Hero(
               tag: 'product_${product.id}',
               child: Container(
                 height: 120,
+                width: double.infinity,
                 decoration: BoxDecoration(
-                  // Gradien diganti abu-abu muda
                   color: Colors.grey[100],
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    _getCategoryIcon(product.category),
-                    size: 50,
-                    // Ikon diganti warna hijau
-                    color: primaryColor,
-                  ),
-                ),
+                child: imageWidget, // Tampilkan gambar atau placeholder
               ),
             ),
             // Product Details
@@ -448,7 +469,6 @@ class _HomeScreenState extends State<HomeScreen>
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            // Harga diganti warna hijau
                             color: primaryColor,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -492,6 +512,17 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Widget baru untuk Placeholder Ikon
+  Widget _buildIconPlaceholder(String category) {
+    return Center(
+      child: Icon(
+        _getCategoryIcon(category),
+        size: 50,
+        color: primaryColor,
       ),
     );
   }
@@ -656,7 +687,7 @@ class _HomeScreenState extends State<HomeScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Order #${order.id.substring(0, 8)}',
+                            'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -785,7 +816,6 @@ class _HomeScreenState extends State<HomeScreen>
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          // Warna teks diganti hitam
                           color: Colors.black,
                         ),
                       ),
@@ -854,6 +884,46 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProfileMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 45,
+          height: 45,
+          decoration: BoxDecoration(
+            color: primaryColor.withOpacity(0.1), // Ikon hijau
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: primaryColor),
+        ),
+        title: const Text(
+          'Riwayat Pesanan',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: onTap,
       ),
     );
   }

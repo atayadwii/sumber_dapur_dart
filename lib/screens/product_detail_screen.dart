@@ -134,6 +134,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
+  // Widget baru untuk menampilkan gambar atau placeholder
+  Widget _buildImageWidget() {
+    final product = widget.product;
+    final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
+
+    if (hasImage) {
+      return Image.network(
+        product.imageUrl!,
+        height: 220,
+        width: 220,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+        },
+      );
+    } else {
+      return _buildIconPlaceholder(product.category, size: 120);
+    }
+  }
+
+  // Widget baru untuk Placeholder Ikon
+  Widget _buildIconPlaceholder(String category, {double size = 50}) {
+    return Center(
+      child: Icon(
+        _getCategoryIcon(category),
+        size: size,
+        color: primaryColor,
+      ),
+    );
+  }
+
   Widget _buildProductImage() {
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -160,12 +193,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               color: Colors.grey[100],
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              _getCategoryIcon(widget.product.category),
-              size: 120,
-              // Ikon diganti hijau
-              color: primaryColor,
-            ),
+            // Panggil widget gambar/ikon
+            child: _buildImageWidget(),
           ),
         ),
       ),

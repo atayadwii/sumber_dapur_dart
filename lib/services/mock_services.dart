@@ -6,7 +6,7 @@ import '../models/models.dart';
 
 // AuthService (Tidak ada perubahan, sudah benar)
 class AuthService extends ChangeNotifier {
-  final String _baseUrl = 'http://10.0.2.2:8000/api';
+  final String _baseUrl = 'http://127.0.0.1:8000/api';
   UserModel? _currentUser;
   String? _token;
   bool _isLoading = true;
@@ -139,7 +139,7 @@ class AuthService extends ChangeNotifier {
 // ProductService (PERUBAHAN BESAR)
 // ==========================================================
 class ProductService extends ChangeNotifier {
-  final String _baseUrl = 'http://10.0.2.2:8000/api';
+  final String _baseUrl = 'http://127.0.0.1:8000/api';
   List<Product> _items = [];
   String? _token;
   bool _isLoggedIn = false;
@@ -254,7 +254,7 @@ class CartService extends ChangeNotifier {
 // OrderService (PERUBAHAN BESAR)
 // ==========================================================
 class OrderService extends ChangeNotifier {
-  final String _baseUrl = 'http://10.0.2.2:8000/api';
+  final String _baseUrl = 'http://127.0.0.1:8000/api';
   List<Order> _orders = [];
   List<Order> get orders => List.unmodifiable(_orders);
 

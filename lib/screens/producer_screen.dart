@@ -331,7 +331,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Order #${order.id.substring(0, 8)}',
+                      order.id.length > 8 ? order.id.substring(0, 8) : order.id,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -450,6 +450,31 @@ class _ProducerDashboardState extends State<ProducerDashboard>
   }
 
   Widget _buildProductCard(Product product, ProductService ps) {
+    // Tentukan apakah ada gambar yang valid
+    final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
+
+    Widget imageWidget;
+    if (hasImage) {
+      // Gunakan Image.network jika URL tersedia
+      imageWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.network(
+          product.imageUrl!,
+          height: 70,
+          width: 70,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category, size: 35), // Fallback jika gagal load
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(primaryColor)));
+          },
+        ),
+      );
+    } else {
+      // Placeholder ikon jika tidak ada URL
+      imageWidget = _buildIconPlaceholder(product.category, size: 35);
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -467,6 +492,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            // Gambar Produk (Diperbarui)
             Container(
               width: 70,
               height: 70,
@@ -474,11 +500,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                 color: Colors.grey[100], // Latar belakang gambar abu-abu
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                _getCategoryIcon(product.category),
-                color: primaryColor, // Ikon hijau
-                size: 35,
-              ),
+              child: imageWidget,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -538,6 +560,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                     final messenger = ScaffoldMessenger.of(context);
                     await ps.updateStock(product.id, -5);
                     if (mounted) {
+                      // Fix: SnackBarBehavior.floating
                       messenger.showSnackBar(
                         const SnackBar(
                           content: Text('Stok dikurangi 5'),
@@ -552,6 +575,17 @@ class _ProducerDashboardState extends State<ProducerDashboard>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Widget baru untuk Placeholder Ikon
+  Widget _buildIconPlaceholder(String category, {double size = 50}) {
+    return Center(
+      child: Icon(
+        _getCategoryIcon(category),
+        size: size,
+        color: primaryColor,
       ),
     );
   }
@@ -756,7 +790,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
   }
 
   // ===========================================================================
-  // Section 4: FAB & Dialog (PERUBAHAN LOGIKA DI SINI)
+  // Section 4: FAB & Dialog (PERBAIKAN DISPOSE)
   // ===========================================================================
 
   Widget _buildAddProductFAB() {
@@ -796,9 +830,9 @@ class _ProducerDashboardState extends State<ProducerDashboard>
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: primaryColor),
         ),
       ),
     );
@@ -806,18 +840,27 @@ class _ProducerDashboardState extends State<ProducerDashboard>
 
   // DIALOG TELAH DI-UPDATE
   void _showAddProductDialog(ProductService ps) {
+    // 1. Definisikan Controllers di luar builder (Ini sudah benar)
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final stockController = TextEditingController();
+    final imageUrlController = TextEditingController(); 
     
-    // TODO: Ini harusnya di-fetch dari API /kategori
-    // Untuk sekarang, kita hardcode ID-nya
-    String selectedCategoryId = '1'; // Asumsi 'Sayur' punya ID 1
+    String selectedCategoryId = '1'; 
     String selectedUnit = 'kg';
 
     // State untuk loading di dalam dialog
     bool isDialogLoading = false;
 
+    // Fungsi untuk membersihkan controller (dipanggil SETELAH dialog ditutup)
+    void disposeControllers() {
+        nameController.dispose();
+        priceController.dispose();
+        stockController.dispose();
+        imageUrlController.dispose(); 
+    }
+
+    // 2. showDialog().whenComplete(dispose)
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -855,6 +898,15 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 12),
+                    // INPUT BARU: Link Gambar
+                    _buildDialogTextField(
+                      controller: imageUrlController,
+                      labelText: 'Link Gambar (Opsional)',
+                      icon: Icons.image_outlined,
+                      keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: 12),
+                    // Dropdown Kategori
                     DropdownButtonFormField<String>(
                       value: selectedCategoryId,
                       decoration: InputDecoration(
@@ -869,7 +921,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                         ),
                       ),
                       // Hardcode Kategori dan ID-nya
-                      items: [
+                      items: const [
                         DropdownMenuItem(value: '1', child: Text('Sayur')),
                         DropdownMenuItem(value: '2', child: Text('Daging')),
                         DropdownMenuItem(value: '3', child: Text('Ikan')),
@@ -878,6 +930,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                           setDialogState(() => selectedCategoryId = val!),
                     ),
                     const SizedBox(height: 12),
+                    // Dropdown Satuan
                     DropdownButtonFormField<String>(
                       value: selectedUnit,
                       decoration: InputDecoration(
@@ -891,10 +944,12 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                           borderSide: BorderSide.none,
                         ),
                       ),
-                      items: ['kg', 'pcs', 'liter', 'gram']
-                          .map((unit) =>
-                              DropdownMenuItem(value: unit, child: Text(unit)))
-                          .toList(),
+                      items: const [
+                        DropdownMenuItem(value: 'kg', child: Text('kg')),
+                        DropdownMenuItem(value: 'pcs', child: Text('pcs')),
+                        DropdownMenuItem(value: 'liter', child: Text('liter')),
+                        DropdownMenuItem(value: 'gram', child: Text('gram')),
+                      ],
                       onChanged: (val) =>
                           setDialogState(() => selectedUnit = val!),
                     ),
@@ -903,7 +958,10 @@ class _ProducerDashboardState extends State<ProducerDashboard>
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
+                  onPressed: () {
+                    // Hanya pop, tidak dispose di sini
+                    Navigator.pop(dialogContext);
+                  },
                   child: const Text('Batal'),
                 ),
                 ElevatedButton(
@@ -927,16 +985,19 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                     // Tampilkan loading di tombol
                     setDialogState(() => isDialogLoading = true);
 
-                    // Buat objek Product dummy (kita hanya butuh data, ID tidak penting)
+                    // Buat objek Product 
                     final product = Product(
-                      id: '', // ID akan dibuat oleh Laravel
-                      producerId: '', // producerId akan diambil dari token
+                      id: '', 
+                      producerId: '',
                       name: nameController.text,
-                      description: 'Produk berkualitas', // Deskripsi default
+                      description: 'Produk berkualitas',
                       price: double.parse(priceController.text),
                       stock: int.parse(stockController.text),
                       unit: selectedUnit,
-                      category: '', // Kategori akan diambil dari ID
+                      category: '',
+                      imageUrl: imageUrlController.text.trim().isNotEmpty
+                          ? imageUrlController.text.trim()
+                          : null,
                     );
 
                     // Panggil ProductService
@@ -946,24 +1007,27 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                     setDialogState(() => isDialogLoading = false);
 
                     if (success) {
-                      navigator.pop(); // Tutup dialog
+                      // Tutup dialog HANYA jika sukses
+                      navigator.pop(); 
                       messenger.showSnackBar(
                         const SnackBar(
                           content: Text('Produk berhasil ditambahkan'),
                           backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
+                          behavior: SnackBarBehavior.floating, // Perbaikan di sini
                         ),
                       );
                     } else {
-                      // Tetap di dialog dan tampilkan error
+                      // Tetap di dialog jika gagal
                        messenger.showSnackBar(
                         const SnackBar(
                           content: Text('Gagal menambah produk. Coba lagi.'),
                           backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
+                          behavior: SnackBarBehavior.floating, // Perbaikan di sini
                         ),
                       );
                     }
+                    
+                    // TIDAK ADA dispose() DI SINI
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor, // Tombol hijau
@@ -986,87 +1050,85 @@ class _ProducerDashboardState extends State<ProducerDashboard>
           },
         );
       },
-    );
+    ).whenComplete(() {
+        // 3. PANGGIL DISPOSE HANYA KETIKA DIALOG SUDAH HILANG DARI LAYAR
+        disposeControllers();
+    });
   }
 
-  // ===========================================================================
-  // Section 5: Helper & Bottom Nav
-  // ===========================================================================
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        selectedItemColor: primaryColor, // Warna hijau
-        unselectedItemColor: Colors.grey,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2),
-            label: 'Produk',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'sayur':
-      case 'sayuran':
+  // Bottom navigation bar implementation
+    Widget _buildBottomNav() {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: primaryColor,
+          unselectedItemColor: Colors.grey,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2_outlined),
+              activeIcon: Icon(Icons.inventory_2),
+              label: 'Produk',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profil',
+            ),
+          ],
+        ),
+      );
+    }
+  
+    // Map product category names to icons
+    IconData _getCategoryIcon(String category) {
+      final key = category.toLowerCase();
+      if (key.contains('sayur') || key.contains('vegetable')) {
         return Icons.eco;
-      case 'daging':
+      } else if (key.contains('daging') || key.contains('meat')) {
         return Icons.set_meal;
-      case 'ikan':
+      } else if (key.contains('ikan') || key.contains('fish')) {
         return Icons.phishing;
-      case 'bumbu':
+      } else if (key.contains('bumbu') || key.contains('spice')) {
         return Icons.grain;
-      case 'susu':
+      } else if (key.contains('susu') || key.contains('milk')) {
         return Icons.local_drink;
-      default:
-        return Icons.shopping_basket;
+      }
+      return Icons.shopping_bag;
     }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'menunggu konfirmasi':
+  
+    // Return a color for an order status (used in recent orders UI)
+    Color _getStatusColor(String status) {
+      final s = status.toLowerCase();
+      if (s.contains('menunggu') || s.contains('pending')) {
         return Colors.orange;
-      case 'diproses':
+      } else if (s.contains('proses') || s.contains('processing')) {
         return Colors.blue;
-      case 'dikirim':
-        return Colors.purple;
-      case 'selesai':
+      } else if (s.contains('selesai') || s.contains('completed')) {
         return Colors.green;
-      case 'dibatalkan':
+      } else if (s.contains('batal') || s.contains('cancel')) {
         return Colors.red;
-      default:
+      }
         return Colors.grey;
+      }
+  
     }
-  }
-}
