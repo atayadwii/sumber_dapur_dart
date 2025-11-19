@@ -6,7 +6,7 @@ import '../models/models.dart'; // Pastikan path ini benar!
 class AddProductPage extends StatefulWidget {
   // Warna primer yang sama dengan ProducerDashboard
   static const Color primaryColor = Color(0xFF1ED760);
-  
+
   // Rute nama untuk navigasi
   static const String routeName = '/add-product';
 
@@ -19,11 +19,13 @@ class _AddProductPageState extends State<AddProductPage> {
   final priceController = TextEditingController();
   final stockController = TextEditingController();
   final imageUrlController = TextEditingController();
-  final descriptionController = TextEditingController(text: 'Produk berkualitas premium'); // Default Deskripsi
-  final deliveryTimeController = TextEditingController(text: '1-2 hari'); // Input untuk "Pengiriman Cepat"
-  
+  final descriptionController = TextEditingController(
+      text: 'Produk berkualitas premium'); // Default Deskripsi
+  final deliveryTimeController =
+      TextEditingController(text: '1-2 hari'); // Input untuk "Pengiriman Cepat"
+
   String selectedCategoryId = '1';
-  String selectedUnit = 'pcs'; 
+  String selectedUnit = 'pcs';
   bool isSaving = false;
 
   // New fields for Service Promises (sesuai permintaan user)
@@ -42,7 +44,7 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
-  // Helper untuk membuat input field sesuai style
+  // Helper untuk membuat input field dengan style modern
   Widget _buildProductInputField({
     required TextEditingController controller,
     required String labelText,
@@ -50,39 +52,58 @@ class _AddProductPageState extends State<AddProductPage> {
     TextInputType? keyboardType,
     int maxLines = 1,
   }) {
-    // Style input field yang mirip dengan desain detail produk (Rounded, Clean)
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.black87,
+        ),
         decoration: InputDecoration(
           labelText: labelText,
-          labelStyle: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600),
+          labelStyle: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
           filled: true,
-          fillColor: Colors.white, // Latar belakang putih
-          prefixIcon: Icon(icon, color: AddProductPage.primaryColor), // Ikon hijau
-          hintText: labelText,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          fillColor: Colors.white,
+          prefixIcon: Icon(
+            icon,
+            color: AddProductPage.primaryColor,
+            size: 22,
+          ),
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16), // Lebih rounded
-            borderSide: const BorderSide(color: Colors.grey, width: 0.5),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AddProductPage.primaryColor, width: 2),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: AddProductPage.primaryColor,
+              width: 2,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
           ),
         ),
       ),
     );
   }
 
-  // Helper untuk membuat item janji layanan (seperti di detail produk)
+  // Helper untuk membuat toggle service dengan style modern
   Widget _buildServiceToggle({
     required IconData icon,
     required String title,
@@ -91,40 +112,55 @@ class _AddProductPageState extends State<AddProductPage> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: value
+            ? AddProductPage.primaryColor.withOpacity(0.08)
+            : Colors.grey[50],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: value
+              ? AddProductPage.primaryColor.withOpacity(0.3)
+              : Colors.grey[200]!,
+          width: 1.5,
+        ),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AddProductPage.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: value
+                  ? AddProductPage.primaryColor.withOpacity(0.15)
+                  : Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AddProductPage.primaryColor, size: 24),
+            child: Icon(
+              icon,
+              color: value ? AddProductPage.primaryColor : Colors.grey[500],
+              size: 22,
+            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Colors.black87,
+              ),
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AddProductPage.primaryColor,
+          Transform.scale(
+            scale: 0.85,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AddProductPage.primaryColor,
+              inactiveTrackColor: Colors.grey[300],
+            ),
           ),
         ],
       ),
@@ -135,7 +171,7 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<void> _submitProduct() async {
     final messenger = ScaffoldMessenger.of(context);
     final ps = context.read<ProductService>();
-    
+
     // Validasi sederhana
     if (nameController.text.isEmpty ||
         priceController.text.isEmpty ||
@@ -153,7 +189,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
     // Set loading
     setState(() => isSaving = true);
-    
+
     // Parsing data
     final price = double.tryParse(priceController.text) ?? 0.0;
     final stock = int.tryParse(stockController.text) ?? 0;
@@ -170,20 +206,19 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-    // Buat objek Product 
+    // Buat objek Product
     // CATATAN: Karena kita tidak punya akses ke Model Product, kita hanya bisa
     // mengirim data yang didukung oleh fungsi addProduct. Data janji layanan
     // diasumsikan akan disimpan di bagian Deskripsi atau metadata lain.
     final product = Product(
-      id: '', 
+      id: '',
       producerId: '',
       name: nameController.text.trim(),
       // Kombinasikan deskripsi dengan janji layanan untuk keperluan mock
-      description: 
-        '${descriptionController.text.trim()}. '
-        'Pengiriman: ${deliveryTimeController.text.trim()}. '
-        'Kualitas Terjamin: ${isGuaranteedQuality ? 'Ya' : 'Tidak'}. '
-        'Layanan 24/7: ${is247Service ? 'Ya' : 'Tidak'}.',
+      description: '${descriptionController.text.trim()}. '
+          'Pengiriman: ${deliveryTimeController.text.trim()}. '
+          'Kualitas Terjamin: ${isGuaranteedQuality ? 'Ya' : 'Tidak'}. '
+          'Layanan 24/7: ${is247Service ? 'Ya' : 'Tidak'}.',
       price: price,
       stock: stock,
       unit: selectedUnit,
@@ -218,229 +253,432 @@ class _AddProductPageState extends State<AddProductPage> {
     }
   }
 
+  // Helper untuk membuat section header yang modern
+  Widget _buildSectionHeader({
+    required String title,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, top: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AddProductPage.primaryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Icon(icon, color: AddProductPage.primaryColor, size: 22),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper untuk membuat section card dengan padding konsisten
+  Widget _buildSectionCard({required List<Widget> children}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 28),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Color(0xFFFAFAFA),
       appBar: AppBar(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon:
+              const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Input Produk Baru',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Tambah Produk Baru',
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                letterSpacing: -0.5,
+              ),
+            ),
+            Text(
+              'Kelola katalog produk Anda dengan mudah',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // ----------------------------------------------------
-            // 1. Gambar & Kategori
-            // ----------------------------------------------------
-            const Text('Foto & Kategori', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            _buildProductInputField(
-              controller: imageUrlController,
-              labelText: 'Link Gambar Produk (Opsional)',
-              icon: Icons.image_outlined,
-              keyboardType: TextInputType.url,
+            // =====================================================
+            // 1. Foto & Kategori Section
+            // =====================================================
+            _buildSectionHeader(
+              title: 'Foto & Kategori',
+              icon: Icons.image_search,
             ),
-            
-            // Dropdown Kategori
-            Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300, width: 1),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButtonFormField<String>(
-                  value: selectedCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Pilih Kategori',
-                    prefixIcon: Icon(Icons.category, color: AddProductPage.primaryColor),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: '1', child: Text('Sayur', style: TextStyle(fontWeight: FontWeight.w500))),
-                    DropdownMenuItem(value: '2', child: Text('Daging', style: TextStyle(fontWeight: FontWeight.w500))),
-                    DropdownMenuItem(value: '3', child: Text('Ikan', style: TextStyle(fontWeight: FontWeight.w500))),
-                    DropdownMenuItem(value: '4', child: Text('Bumbu', style: TextStyle(fontWeight: FontWeight.w500))),
-                  ],
-                  onChanged: (val) => setState(() => selectedCategoryId = val!),
-                ),
-              ),
-            ),
-
-            // ----------------------------------------------------
-            // 2. Detail Produk & Stok
-            // ----------------------------------------------------
-            const Text('Detail Produk & Harga', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            
-            _buildProductInputField(
-              controller: nameController,
-              labelText: 'Nama Produk (Contoh: Tomat Segar)',
-              icon: Icons.inventory_2,
-            ),
-
-            _buildProductInputField(
-              controller: descriptionController,
-              labelText: 'Deskripsi Produk (Contoh: Kualitas premium)',
-              icon: Icons.description,
-              maxLines: 3,
-            ),
-            
-            Row(
+            _buildSectionCard(
               children: [
-                Expanded(
-                  child: _buildProductInputField(
-                    controller: priceController,
-                    labelText: 'Harga Jual (Rp)',
-                    icon: Icons.attach_money,
-                    keyboardType: TextInputType.number,
-                  ),
+                _buildProductInputField(
+                  controller: imageUrlController,
+                  labelText: 'Link Gambar Produk (Opsional)',
+                  icon: Icons.image_outlined,
+                  keyboardType: TextInputType.url,
                 ),
-                const SizedBox(width: 12),
                 Container(
-                  width: 100,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                    border: Border.all(color: Colors.grey.shade300, width: 1.5),
                   ),
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: selectedUnit,
-                      icon: const Icon(Icons.arrow_drop_down, color: AddProductPage.primaryColor),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedCategoryId,
+                      decoration: const InputDecoration(
+                        labelText: 'Pilih Kategori',
+                        labelStyle: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.category,
+                          color: AddProductPage.primaryColor,
+                          size: 22,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      ),
                       items: const [
-                        DropdownMenuItem(value: 'pcs', child: Text('pcs')),
-                        DropdownMenuItem(value: 'kg', child: Text('kg')),
-                        DropdownMenuItem(value: 'liter', child: Text('liter')),
-                        DropdownMenuItem(value: 'gram', child: Text('gram')),
+                        DropdownMenuItem(
+                          value: '1',
+                          child: Text(
+                            'Sayur',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: '2',
+                          child: Text(
+                            'Daging',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: '3',
+                          child: Text(
+                            'Ikan',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: '4',
+                          child: Text(
+                            'Bumbu',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
                       ],
-                      onChanged: (val) => setState(() => selectedUnit = val!),
+                      onChanged: (val) =>
+                          setState(() => selectedCategoryId = val!),
                     ),
                   ),
                 ),
               ],
             ),
-            
-            // Kotak Stok Tersedia (di-style seperti di detail produk)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              margin: const EdgeInsets.only(bottom: 30),
-              decoration: BoxDecoration(
-                color: AddProductPage.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AddProductPage.primaryColor, width: 1),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: AddProductPage.primaryColor),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildProductInputField(
-                      controller: stockController,
-                      labelText: 'Jumlah Stok Awal',
-                      icon: Icons.inventory,
-                      keyboardType: TextInputType.number,
+
+            // =====================================================
+            // 2. Detail Produk Section
+            // =====================================================
+            _buildSectionHeader(
+              title: 'Detail Produk',
+              icon: Icons.inventory_2,
+            ),
+            _buildSectionCard(
+              children: [
+                _buildProductInputField(
+                  controller: nameController,
+                  labelText: 'Nama Produk',
+                  icon: Icons.inventory_2,
+                ),
+                _buildProductInputField(
+                  controller: descriptionController,
+                  labelText: 'Deskripsi Produk',
+                  icon: Icons.description,
+                  maxLines: 3,
+                ),
+              ],
+            ),
+
+            // =====================================================
+            // 3. Harga & Stok Section
+            // =====================================================
+            _buildSectionHeader(
+              title: 'Harga & Stok',
+              icon: Icons.local_offer,
+            ),
+            _buildSectionCard(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildProductInputField(
+                        controller: priceController,
+                        labelText: 'Harga Jual',
+                        icon: Icons.attach_money,
+                        keyboardType: TextInputType.number,
+                      ),
                     ),
-                  ),
-                  Text(selectedUnit, style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 8),
-                ],
-              ),
-            ),
-
-            // ----------------------------------------------------
-            // 3. Janji Layanan (New Section)
-            // ----------------------------------------------------
-            const Text('Janji Layanan & Pengiriman', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            
-            // Input Pengiriman Cepat
-            _buildProductInputField(
-              controller: deliveryTimeController,
-              labelText: 'Estimasi Pengiriman (contoh: 1-2 hari)',
-              icon: Icons.delivery_dining,
-            ),
-            
-            // Toggle Kualitas Terjamin
-            _buildServiceToggle(
-              icon: Icons.verified_user,
-              title: 'Kualitas Terjamin',
-              value: isGuaranteedQuality,
-              onChanged: (val) => setState(() => isGuaranteedQuality = val ?? false),
-            ),
-
-            // Toggle Layanan 24/7
-            _buildServiceToggle(
-              icon: Icons.headset_mic,
-              title: 'Layanan 24/7 Siap Membantu',
-              value: is247Service,
-              onChanged: (val) => setState(() => is247Service = val ?? false),
-            ),
-          ],
-        ),
-      ),
-      // Tombol Simpan Produk
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: isSaving ? null : _submitProduct,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AddProductPage.primaryColor,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          child: isSaving
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.check_circle_outline, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      'Simpan & Terbitkan Produk',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 110,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
                         color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: Colors.grey.shade300, width: 1.5),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedUnit,
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: AddProductPage.primaryColor,
+                            size: 24,
+                          ),
+                          isDense: true,
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'pcs',
+                              child: Text(
+                                'pcs',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'kg',
+                              child: Text(
+                                'kg',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'liter',
+                              child: Text(
+                                'liter',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'gram',
+                              child: Text(
+                                'gram',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) =>
+                              setState(() => selectedUnit = val!),
+                        ),
                       ),
                     ),
                   ],
                 ),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AddProductPage.primaryColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AddProductPage.primaryColor.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color:
+                                  AddProductPage.primaryColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.inventory,
+                              color: AddProductPage.primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Jumlah Stok Awal',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: stockController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan jumlah stok',
+                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          suffixText: selectedUnit,
+                          suffixStyle: TextStyle(
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // =====================================================
+            // 4. Pengiriman & Layanan Section
+            // =====================================================
+            _buildSectionHeader(
+              title: 'Pengiriman & Layanan',
+              icon: Icons.local_shipping_outlined,
+            ),
+            _buildSectionCard(
+              children: [
+                _buildProductInputField(
+                  controller: deliveryTimeController,
+                  labelText: 'Estimasi Pengiriman',
+                  icon: Icons.schedule,
+                ),
+                _buildServiceToggle(
+                  icon: Icons.verified_user,
+                  title: 'Kualitas Terjamin',
+                  value: isGuaranteedQuality,
+                  onChanged: (val) =>
+                      setState(() => isGuaranteedQuality = val ?? false),
+                ),
+                _buildServiceToggle(
+                  icon: Icons.support_agent,
+                  title: 'Layanan 24/7 Siap Membantu',
+                  value: is247Service,
+                  onChanged: (val) =>
+                      setState(() => is247Service = val ?? false),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      // Tombol Simpan di Bottom
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: ElevatedButton(
+            onPressed: isSaving ? null : _submitProduct,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AddProductPage.primaryColor,
+              disabledBackgroundColor: Colors.grey[300],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+            child: isSaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.cloud_upload_outlined, color: Colors.white),
+                      SizedBox(width: 10),
+                      Text(
+                        'Simpan & Terbitkan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

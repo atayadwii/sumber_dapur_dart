@@ -330,9 +330,9 @@ class _HomeScreenState extends State<HomeScreen>
         padding: const EdgeInsets.all(20),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.75,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemCount: products.length,
         itemBuilder: (context, index) {
@@ -355,13 +355,15 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         child: Image.network(
           product.imageUrl!,
-          height: 120,
+          height: 100,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category), 
+          errorBuilder: (context, error, stackTrace) =>
+              _buildIconPlaceholder(product.category),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+            return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2));
           },
         ),
       );
@@ -396,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen>
             Hero(
               tag: 'product_${product.id}',
               child: Container(
-                height: 120,
+                height: 100,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -405,32 +407,32 @@ class _HomeScreenState extends State<HomeScreen>
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: imageWidget, 
+                child: imageWidget,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     product.unit,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 10,
                       color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -483,6 +485,7 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
+
   Widget _buildIconPlaceholder(String category) {
     return Center(
       child: Icon(
@@ -581,7 +584,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-
   Widget _buildOrdersContent() {
     final orderService = Provider.of<OrderService>(context);
     final orders = orderService.orders;
@@ -612,8 +614,7 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.receipt_long,
-                        size: 80, color: Colors.grey[300]),
+                    Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
                     const SizedBox(height: 16),
                     Text(
                       'Belum ada pesanan',
@@ -648,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                            'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
+                              'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -707,6 +708,7 @@ class _HomeScreenState extends State<HomeScreen>
         return Colors.grey;
     }
   }
+
   Widget _buildProfileContent(AuthService auth) {
     final user = auth.currentUser;
     if (user == null) {
@@ -824,8 +826,7 @@ class _HomeScreenState extends State<HomeScreen>
                           borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
-                      Provider.of<AuthService>(context, listen: false)
-                          .logout();
+                      Provider.of<AuthService>(context, listen: false).logout();
                     },
                     child: const Text('Logout',
                         style: TextStyle(fontWeight: FontWeight.bold)),
@@ -873,7 +874,8 @@ class _HomeScreenState extends State<HomeScreen>
             fontSize: 16,
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing:
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );

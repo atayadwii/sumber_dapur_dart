@@ -6,7 +6,8 @@ import '../models/models.dart';
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
-  const ProductDetailScreen({Key? key, required this.product}) : super(key: key);
+  const ProductDetailScreen({Key? key, required this.product})
+      : super(key: key);
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -40,6 +41,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     _animController.forward();
     _extractProductFeatures();
   }
+
   void _extractProductFeatures() {
     final fullDesc = widget.product.description;
     String pengiriman = 'Tidak ditentukan';
@@ -47,38 +49,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     String layanan = 'Tidak ditentukan';
     String deskripsiAwal = fullDesc;
 
-
     final pengirimanMatch = RegExp(r'Pengiriman: (.*?)\.').firstMatch(fullDesc);
     if (pengirimanMatch != null && pengirimanMatch.groupCount >= 1) {
       pengiriman = pengirimanMatch.group(1)!.trim();
-      deskripsiAwal = deskripsiAwal.replaceAll(pengirimanMatch.group(0)!, '').trim();
+      deskripsiAwal =
+          deskripsiAwal.replaceAll(pengirimanMatch.group(0)!, '').trim();
     }
-    final kualitasMatch = RegExp(r'Kualitas Terjamin: (.*?)\.').firstMatch(deskripsiAwal);
+    final kualitasMatch =
+        RegExp(r'Kualitas Terjamin: (.*?)\.').firstMatch(deskripsiAwal);
     if (kualitasMatch != null && kualitasMatch.groupCount >= 1) {
       kualitas = kualitasMatch.group(1)!.trim();
-      deskripsiAwal = deskripsiAwal.replaceAll(kualitasMatch.group(0)!, '').trim();
+      deskripsiAwal =
+          deskripsiAwal.replaceAll(kualitasMatch.group(0)!, '').trim();
     }
-    final layananMatch = RegExp(r'Layanan 24\/7: (.*?)\.').firstMatch(deskripsiAwal);
+    final layananMatch =
+        RegExp(r'Layanan 24\/7: (.*?)\.').firstMatch(deskripsiAwal);
     if (layananMatch != null && layananMatch.groupCount >= 1) {
       layanan = layananMatch.group(1)!.trim();
-      deskripsiAwal = deskripsiAwal.replaceAll(layananMatch.group(0)!, '').trim();
+      deskripsiAwal =
+          deskripsiAwal.replaceAll(layananMatch.group(0)!, '').trim();
     }
     if (deskripsiAwal.endsWith('.')) {
       deskripsiAwal = deskripsiAwal.substring(0, deskripsiAwal.length - 1);
     }
     deskripsiAwal = deskripsiAwal.trim();
-    _actualDescription = deskripsiAwal.isNotEmpty ? deskripsiAwal : 'Deskripsi produk belum tersedia.';
+    _actualDescription = deskripsiAwal.isNotEmpty
+        ? deskripsiAwal
+        : 'Deskripsi produk belum tersedia.';
     _features = {
       'pengiriman': pengiriman,
       'kualitas': kualitas,
       'layanan': layanan,
     };
   }
+
   @override
   void dispose() {
     _animController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final cartService = Provider.of<CartService>(context, listen: false);
@@ -115,7 +125,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ),
     );
   }
-  
+
   Widget _buildAppBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -130,8 +140,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon:
-                  const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+              icon: const Icon(Icons.arrow_back_ios_new,
+                  color: Colors.white, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
@@ -177,7 +187,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         height: 220,
         width: 220,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildIconPlaceholder(product.category),
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return const Center(child: CircularProgressIndicator(strokeWidth: 2));
@@ -231,13 +242,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ),
     );
   }
+
   Widget _buildProductInfo() {
     final pengiriman = _features['pengiriman'] ?? 'Dikirim dalam 1-2 hari';
-    final kualitas = _features['kualitas'] == 'Ya' ? 'Produk berkualitas premium' : 'Kualitas Standar';
-    final layanan = _features['layanan'] == 'Ya' ? 'Customer service 24/7 siap membantu' : 'Layanan pada jam kerja';
+    final kualitas = _features['kualitas'] == 'Ya'
+        ? 'Produk berkualitas premium'
+        : 'Kualitas Standar';
+    final layanan = _features['layanan'] == 'Ya'
+        ? 'Customer service 24/7 siap membantu'
+        : 'Layanan pada jam kerja';
     final isGuaranteedQuality = _features['kualitas'] == 'Ya';
     final is247Service = _features['layanan'] == 'Ya';
-
 
     return SlideTransition(
       position: _slideAnimation,
@@ -351,8 +366,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       widget.product.stock > 10
                           ? Icons.check_circle
                           : Icons.info,
-                      color:
-                          widget.product.stock > 10 ? Colors.green : Colors.orange,
+                      color: widget.product.stock > 10
+                          ? Colors.green
+                          : Colors.orange,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -393,7 +409,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               Text(
                 _actualDescription.isEmpty
                     ? 'Produk segar berkualitas tinggi dari produsen terpercaya. Dijamin fresh dan higienis.'
-                    : _actualDescription, 
+                    : _actualDescription,
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey[700],
@@ -405,28 +421,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   Icons.local_shipping, 'Pengiriman Cepat', pengiriman),
               const SizedBox(height: 12),
               _buildFeatureItem(
-                  isGuaranteedQuality ? Icons.verified : Icons.help_outline, 
-                  'Kualitas Terjamin', 
-                  kualitas
-              ),
+                  isGuaranteedQuality ? Icons.verified : Icons.help_outline,
+                  'Kualitas Terjamin',
+                  kualitas),
               const SizedBox(height: 12),
               _buildFeatureItem(
-                  is247Service ? Icons.support_agent : Icons.access_time, 
-                  'Layanan 24/7', 
-                  layanan
-              ),
-              const SizedBox(height: 100), 
+                  is247Service ? Icons.support_agent : Icons.access_time,
+                  'Layanan 24/7',
+                  layanan),
+              const SizedBox(height: 100),
             ],
           ),
         ),
       ),
     );
   }
+
   Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
-    final Color itemColor = subtitle.toLowerCase().contains('tidak ditentukan') || subtitle.toLowerCase().contains('standar') || subtitle.toLowerCase().contains('jam kerja')
-        ? Colors.grey 
-        : primaryColor; 
-        
+    final Color itemColor =
+        subtitle.toLowerCase().contains('tidak ditentukan') ||
+                subtitle.toLowerCase().contains('standar') ||
+                subtitle.toLowerCase().contains('jam kerja')
+            ? Colors.grey
+            : primaryColor;
+
     return Row(
       children: [
         Container(
@@ -481,19 +499,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: SafeArea(
         child: Row(
           children: [
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.remove, color: Colors.red),
+                    iconSize: 20,
                     onPressed: () {
                       if (_quantity > 1) {
                         setState(() => _quantity--);
@@ -501,17 +520,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     },
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       '$_quantity',
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add, color: primaryColor), 
+                    icon: const Icon(Icons.add, color: primaryColor),
+                    iconSize: 20,
                     onPressed: () {
                       if (_quantity < widget.product.stock) {
                         setState(() => _quantity++);
@@ -529,16 +549,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Container(
-                height: 56,
+                height: 50,
                 decoration: BoxDecoration(
                   color: primaryColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: primaryColor.withOpacity(0.4), 
+                      color: primaryColor.withOpacity(0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -557,7 +577,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         SnackBar(
                           content: Row(
                             children: [
-                              const Icon(Icons.check_circle, color: Colors.white),
+                              const Icon(Icons.check_circle,
+                                  color: Colors.white),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -577,13 +598,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Icon(Icons.shopping_cart, color: Colors.white),
-                        SizedBox(width: 12),
+                        Icon(Icons.shopping_cart,
+                            color: Colors.white, size: 20),
+                        SizedBox(width: 8),
                         Text(
-                          'Tambah ke Keranjang',
+                          'Keranjang',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

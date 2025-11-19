@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/models.dart'; 
+import '../models/models.dart';
 
 // AuthService (Tidak ada perubahan, sudah benar)
 class AuthService extends ChangeNotifier {
-  final String _baseUrl = 'http://127.0.0.1:8000/api';
+  final String _baseUrl = 'http://10.0.2.2:8000/api';
   UserModel? _currentUser;
   String? _token;
   bool _isLoading = true;
@@ -27,7 +27,8 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final extractedData = json.decode(prefs.getString('userData')!) as Map<String, dynamic>;
+    final extractedData =
+        json.decode(prefs.getString('userData')!) as Map<String, dynamic>;
     final token = extractedData['token'] as String;
     try {
       final response = await http.get(
@@ -44,7 +45,9 @@ class AuthService extends ChangeNotifier {
           name: data['nama'],
           email: data['email'],
           phone: data['noHp'] ?? '',
-          type: data['tipeUser'] == 'Producer' ? UserType.Producer : UserType.Buyer,
+          type: data['tipeUser'] == 'Producer'
+              ? UserType.Producer
+              : UserType.Buyer,
         );
         _token = token;
       } else {
@@ -58,7 +61,8 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> register(String name, String email, String phone, String password, UserType type) async {
+  Future<bool> register(String name, String email, String phone,
+      String password, UserType type) async {
     final roleString = type == UserType.Producer ? 'Producer' : 'Buyer';
     try {
       final response = await http.post(
@@ -101,10 +105,13 @@ class AuthService extends ChangeNotifier {
           name: userData['nama'],
           email: userData['email'],
           phone: userData['noHp'] ?? '',
-          type: userData['tipeUser'] == 'Producer' ? UserType.Producer : UserType.Buyer,
+          type: userData['tipeUser'] == 'Producer'
+              ? UserType.Producer
+              : UserType.Buyer,
         );
         final prefs = await SharedPreferences.getInstance();
-        final prefsData = json.encode({'token': _token, 'userId': _currentUser!.id});
+        final prefsData =
+            json.encode({'token': _token, 'userId': _currentUser!.id});
         await prefs.setString('userData', prefsData);
         notifyListeners();
         return true;
@@ -122,7 +129,10 @@ class AuthService extends ChangeNotifier {
     try {
       await http.post(
         Uri.parse('$_baseUrl/logout'),
-        headers: {'Authorization': 'Bearer $_token', 'Accept': 'application/json'},
+        headers: {
+          'Authorization': 'Bearer $_token',
+          'Accept': 'application/json'
+        },
       );
     } catch (e) {
       print('Logout API error: $e');
@@ -139,7 +149,7 @@ class AuthService extends ChangeNotifier {
 // ProductService (PERUBAHAN BESAR)
 // ==========================================================
 class ProductService extends ChangeNotifier {
-  final String _baseUrl = 'http://127.0.0.1:8000/api';
+  final String _baseUrl = 'http://10.0.2.2:8000/api';
   List<Product> _items = [];
   String? _token;
   bool _isLoggedIn = false;
@@ -166,19 +176,31 @@ class ProductService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body)['data'];
         _items = data.map((item) {
+          // Konversi harga ke double dengan aman
+          final harga = item['harga'];
+          final price = harga is double
+              ? harga
+              : (harga is int
+                  ? harga.toDouble()
+                  : double.parse(harga.toString()));
+
+          // Konversi stok ke int dengan aman
+          final stok = item['stok'];
+          final stock = stok is int ? stok : int.parse(stok.toString());
+
           return Product(
             id: item['id'].toString(),
             producerId: item['penjual']['id'].toString(),
             name: item['namaProduk'],
             description: item['deskripsi'] ?? 'Deskripsi produk',
-            price: item['harga'],
-            stock: item['stok'],
+            price: price,
+            stock: stock,
             unit: item['satuan'],
             category: item['kategori']?['namaKategori'] ?? 'Lainnya',
             producerName: item['penjual']?['nama'] ?? 'Penjual',
           );
         }).toList();
-        
+
         notifyListeners();
         return _items;
       }
@@ -213,7 +235,7 @@ class ProductService extends ChangeNotifier {
 
       if (response.statusCode == 201) {
         // Jika berhasil, panggil getProducts() untuk refresh list
-        getProducts(); 
+        getProducts();
         return true;
       } else {
         print('addProduct failed: ${response.body}');
@@ -245,16 +267,32 @@ class ProductService extends ChangeNotifier {
 class CartService extends ChangeNotifier {
   final Map<String, int> _cart = {};
   Map<String, int> get items => Map.unmodifiable(_cart);
-  void add(String productId) { _cart[productId] = (_cart[productId] ?? 0) + 1; notifyListeners(); }
-  void remove(String productId) { if (!_cart.containsKey(productId)) return; final q = _cart[productId]!; if (q <= 1) _cart.remove(productId); else _cart[productId] = q - 1; notifyListeners(); }
-  void clear() { _cart.clear(); notifyListeners(); }
+  void add(String productId) {
+    _cart[productId] = (_cart[productId] ?? 0) + 1;
+    notifyListeners();
+  }
+
+  void remove(String productId) {
+    if (!_cart.containsKey(productId)) return;
+    final q = _cart[productId]!;
+    if (q <= 1)
+      _cart.remove(productId);
+    else
+      _cart[productId] = q - 1;
+    notifyListeners();
+  }
+
+  void clear() {
+    _cart.clear();
+    notifyListeners();
+  }
 }
 
 // ==========================================================
 // OrderService (PERUBAHAN BESAR)
 // ==========================================================
 class OrderService extends ChangeNotifier {
-  final String _baseUrl = 'http://127.0.0.1:8000/api';
+  final String _baseUrl = 'http://10.0.2.2:8000/api';
   List<Order> _orders = [];
   List<Order> get orders => List.unmodifiable(_orders);
 
@@ -286,10 +324,12 @@ class OrderService extends ChangeNotifier {
   }) async {
     if (!_isLoggedIn || _token == null) throw Exception('User not logged in');
 
-    final itemsJson = items.map((item) => {
-      'produk_id': int.parse(item.productId),
-      'jumlah': item.qty,
-    }).toList();
+    final itemsJson = items
+        .map((item) => {
+              'produk_id': int.parse(item.productId),
+              'jumlah': item.qty,
+            })
+        .toList();
 
     final response = await http.post(
       Uri.parse('$_baseUrl/pesanan'),
@@ -306,7 +346,14 @@ class OrderService extends ChangeNotifier {
 
     if (response.statusCode == 201) {
       _fetchOrders(); // Refresh daftar pesanan
-      return Order(id: 'dummy', buyerId: '', producerId: '', createdAt: DateTime.now(), status: 'pending', total: 0, items: []);
+      return Order(
+          id: 'dummy',
+          buyerId: '',
+          producerId: '',
+          createdAt: DateTime.now(),
+          status: 'pending',
+          total: 0,
+          items: []);
     } else {
       final data = json.decode(response.body);
       throw Exception(data['message'] ?? 'Gagal membuat pesanan');
@@ -315,8 +362,8 @@ class OrderService extends ChangeNotifier {
 
   // 5. Fungsi '_fetchOrders' sekarang pakai token internal
   Future<void> _fetchOrders() async {
-     if (!_isLoggedIn || _token == null) return;
-     try {
+    if (!_isLoggedIn || _token == null) return;
+    try {
       final response = await http.get(
         Uri.parse('$_baseUrl/pesanan'),
         headers: {
@@ -335,7 +382,7 @@ class OrderService extends ChangeNotifier {
             createdAt: DateTime.parse(orderData['tgl_pesanan']),
             status: orderData['status_pesanan'],
             total: double.parse(orderData['total_harga']),
-            items: [], 
+            items: [],
           );
         }).toList();
         notifyListeners();
