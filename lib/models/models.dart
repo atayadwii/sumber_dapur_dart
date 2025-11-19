@@ -1,6 +1,3 @@
-import 'package:flutter/foundation.dart';
-
-
 enum UserType { Buyer, Producer }
 
 enum OrderStatus {

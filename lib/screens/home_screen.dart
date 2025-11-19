@@ -12,7 +12,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  // Definisikan warna primer agar mudah digunakan kembali
   static const Color primaryColor = Color(0xFF1ED760);
 
   int _selectedIndex = 0;
@@ -62,12 +61,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Kita pakai Consumer di sini agar lebih aman saat logout
     return Consumer<AuthService>(builder: (context, auth, child) {
-      // Jika auth.currentUser null (karena baru logout),
-      // kita tampilkan loading agar tidak crash
       if (auth.currentUser == null) {
-        // Ini adalah safety net jika RootRouter telat rebuild
         return const Scaffold(
             body: Center(
                 child: CircularProgressIndicator(
@@ -76,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen>
       }
 
       return Scaffold(
-        // Latar belakang utama di-set ke putih
         backgroundColor: Colors.white,
         body: _selectedIndex == 0
             ? _buildHomeContent(auth)
@@ -92,8 +86,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHomeContent(AuthService auth) {
     final cartService = Provider.of<CartService>(context);
-
-    // Menghapus container gradient, diganti SafeArea
     return SafeArea(
       child: Column(
         children: [
@@ -110,7 +102,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildHeader(AuthService auth) {
-    // Safety check jika user keburu null
     final user = auth.currentUser;
     if (user == null) return Container();
 
@@ -118,7 +109,6 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          // Avatar
           Container(
             width: 50,
             height: 50,
@@ -139,14 +129,12 @@ class _HomeScreenState extends State<HomeScreen>
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  // Warna diubah ke hijau
                   color: primaryColor,
                 ),
               ),
             ),
           ),
           const SizedBox(width: 16),
-          // Greeting
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +144,6 @@ class _HomeScreenState extends State<HomeScreen>
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    // Warna diubah ke hitam
                     color: Colors.black,
                   ),
                 ),
@@ -165,19 +152,16 @@ class _HomeScreenState extends State<HomeScreen>
                   'Mau belanja apa hari ini?',
                   style: TextStyle(
                     fontSize: 14,
-                    // Warna diubah ke abu-abu
                     color: Colors.grey[600],
                   ),
                 ),
               ],
             ),
           ),
-          // Notification Icon
           Container(
             width: 45,
             height: 45,
             decoration: BoxDecoration(
-              // Warna diubah ke abu-abu muda
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
             ),
@@ -186,7 +170,6 @@ class _HomeScreenState extends State<HomeScreen>
                 const Center(
                   child: Icon(
                     Icons.notifications_outlined,
-                    // Warna diubah ke hitam
                     color: Colors.black,
                     size: 24,
                   ),
@@ -216,7 +199,6 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          // Latar belakang diubah ke abu-abu muda (seperti login)
           color: Colors.grey[100],
           borderRadius: BorderRadius.circular(16),
         ),
@@ -225,14 +207,12 @@ class _HomeScreenState extends State<HomeScreen>
           decoration: InputDecoration(
             hintText: 'Cari produk...',
             hintStyle: TextStyle(color: Colors.grey[500]),
-            // Ikon diubah ke abu-abu
             prefixIcon: Icon(Icons.search, color: Colors.grey[700]),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.clear, color: Colors.grey),
                     onPressed: () => setState(() => _searchQuery = ''),
                   )
-                // Ikon diubah ke abu-abu
                 : Icon(Icons.tune, color: Colors.grey[700]),
             border: InputBorder.none,
             contentPadding:
@@ -259,13 +239,11 @@ class _HomeScreenState extends State<HomeScreen>
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                // Gradien dihilangkan, diganti warna solid
                 color: isSelected ? primaryColor : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
                     color: isSelected
-                        // Shadow disesuaikan dengan warna hijau
                         ? primaryColor.withOpacity(0.3)
                         : Colors.black.withOpacity(0.05),
                     blurRadius: 8,
@@ -302,8 +280,6 @@ class _HomeScreenState extends State<HomeScreen>
     final products = _allProducts.where((p) {
       final matchesSearch = _searchQuery.isEmpty ||
           p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-
-      // Extract category without emoji
       String categoryFilter = _selectedCategory
           .replaceAll('🥬 ', '')
           .replaceAll('🍖 ', '')
@@ -368,12 +344,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildProductCard(Product product, CartService cartService) {
-    // Tentukan apakah ada gambar yang valid
     final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
 
     Widget imageWidget;
     if (hasImage) {
-      // Gunakan Image.network jika URL tersedia
       imageWidget = ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -384,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen>
           height: 120,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category), // Fallback jika gagal load
+          errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category), 
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return const Center(child: CircularProgressIndicator(strokeWidth: 2));
@@ -392,7 +366,6 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       );
     } else {
-      // Placeholder ikon jika tidak ada URL
       imageWidget = _buildIconPlaceholder(product.category);
     }
 
@@ -420,7 +393,6 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image Section
             Hero(
               tag: 'product_${product.id}',
               child: Container(
@@ -433,10 +405,9 @@ class _HomeScreenState extends State<HomeScreen>
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: imageWidget, // Tampilkan gambar atau placeholder
+                child: imageWidget, 
               ),
             ),
-            // Product Details
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -476,7 +447,6 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       GestureDetector(
                         onTap: () {
-                          // Gunakan listen: false untuk aksi
                           Provider.of<CartService>(context, listen: false)
                               .add(product.id);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -485,7 +455,6 @@ class _HomeScreenState extends State<HomeScreen>
                                   '${product.name} ditambahkan ke keranjang'),
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
-                              // SnackBar diganti warna hijau
                               backgroundColor: primaryColor,
                             ),
                           );
@@ -494,7 +463,6 @@ class _HomeScreenState extends State<HomeScreen>
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            // Gradien diganti warna solid hijau
                             color: primaryColor,
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -515,8 +483,6 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
-
-  // Widget baru untuk Placeholder Ikon
   Widget _buildIconPlaceholder(String category) {
     return Center(
       child: Icon(
@@ -546,7 +512,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildCartFAB() {
-    // Di sini kita HANYA mendengarkan CartService
     final cartService = Provider.of<CartService>(context);
     final cartItems = cartService.items;
     final itemCount = cartItems.values.fold<int>(0, (sum, qty) => sum + qty);
@@ -591,7 +556,6 @@ class _HomeScreenState extends State<HomeScreen>
         onTap: (index) => setState(() => _selectedIndex = index),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // Warna item terpilih diganti hijau
         selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
@@ -617,13 +581,10 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // Orders Screen Content
+
   Widget _buildOrdersContent() {
-    // Di sini kita HANYA mendengarkan OrderService
     final orderService = Provider.of<OrderService>(context);
     final orders = orderService.orders;
-
-    // Mengganti Container gradient dengan Scaffold
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -746,20 +707,14 @@ class _HomeScreenState extends State<HomeScreen>
         return Colors.grey;
     }
   }
-
-  // Profile Screen Content
   Widget _buildProfileContent(AuthService auth) {
     final user = auth.currentUser;
-
-    // Safety net tambahan
     if (user == null) {
       return const Center(
           child: CircularProgressIndicator(
         valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
       ));
     }
-
-    // Mengganti Container gradient dengan Scaffold
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -824,7 +779,6 @@ class _HomeScreenState extends State<HomeScreen>
                         user.email,
                         style: TextStyle(
                           fontSize: 14,
-                          // Warna teks diganti abu-abu
                           color: Colors.grey[600],
                         ),
                       ),
@@ -848,7 +802,6 @@ class _HomeScreenState extends State<HomeScreen>
                 padding: const EdgeInsets.all(20),
                 children: [
                   ListTile(
-                    // Warna ikon diganti hijau
                     leading: const Icon(Icons.history, color: primaryColor),
                     title: const Text('Riwayat Pesanan'),
                     trailing: const Icon(Icons.chevron_right),
@@ -857,7 +810,6 @@ class _HomeScreenState extends State<HomeScreen>
                     },
                   ),
                   ListTile(
-                    // Warna ikon diganti hijau
                     leading: const Icon(Icons.settings, color: primaryColor),
                     title: const Text('Pengaturan'),
                     trailing: const Icon(Icons.chevron_right),
@@ -871,7 +823,6 @@ class _HomeScreenState extends State<HomeScreen>
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    // Logika logout ini sudah benar (anti-crash)
                     onPressed: () {
                       Provider.of<AuthService>(context, listen: false)
                           .logout();
@@ -910,7 +861,7 @@ class _HomeScreenState extends State<HomeScreen>
           width: 45,
           height: 45,
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.1), // Ikon hijau
+            color: primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: primaryColor),

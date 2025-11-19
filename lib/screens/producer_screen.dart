@@ -11,7 +11,6 @@ class ProducerDashboard extends StatefulWidget {
 
 class _ProducerDashboardState extends State<ProducerDashboard>
     with SingleTickerProviderStateMixin {
-  // Definisikan warna primer
   static const Color primaryColor = Color(0xFF1ED760);
 
   int _selectedIndex = 0;
@@ -35,7 +34,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan Consumer untuk keamanan saat logout
     return Consumer<AuthService>(builder: (context, auth, child) {
       if (auth.currentUser == null) {
         return const Scaffold(
@@ -46,7 +44,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
       }
 
       return Scaffold(
-        backgroundColor: Colors.white, // Latar belakang utama putih
+        backgroundColor: Colors.white, 
         body: _selectedIndex == 0
             ? _buildDashboardContent(auth)
             : _selectedIndex == 1
@@ -58,12 +56,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
     });
   }
 
-  // ===========================================================================
-  // Section 1: Dashboard
-  // ===========================================================================
-
   Widget _buildDashboardContent(AuthService auth) {
-    // Panggil 'watch' di sini agar UI update saat list produk/order berubah
     final ps = context.watch<ProductService>();
     final orderService = context.watch<OrderService>();
     
@@ -87,13 +80,13 @@ class _ProducerDashboardState extends State<ProducerDashboard>
         ),
       ),
       body: Container(
-        color: Colors.grey[50], // Latar belakang abu-abu
+        color: Colors.grey[50], 
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(auth), // Header di-pindah ke sini
+              _buildHeader(auth), 
               const SizedBox(height: 24),
               const Text(
                 'Statistik Bisnis',
@@ -148,7 +141,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: primaryColor, // Diubah ke hijau
+                  color: primaryColor, 
                 ),
               ),
             ),
@@ -162,7 +155,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                   'Selamat Datang! 👋',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[600], // Diubah ke abu-abu
+                    color: Colors.grey[600], 
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -171,7 +164,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black, // Diubah ke hitam
+                    color: Colors.black, 
                   ),
                 ),
               ],
@@ -371,13 +364,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
       }).toList(),
     );
   }
-
-  // ===========================================================================
-  // Section 2: Produk
-  // ===========================================================================
-
   Widget _buildProductsContent(AuthService auth) {
-    // Gunakan 'watch' agar UI di-update saat produk baru ditambahkan
     final ps = context.watch<ProductService>();
     final myProducts = ps.productsByProducer(auth.currentUser!.id);
 
@@ -590,11 +577,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
       ),
     );
   }
-
-  // ===========================================================================
-  // Section 3: Profil
-  // ===========================================================================
-
   Widget _buildProfileContent(AuthService auth) {
     final user = auth.currentUser;
     if (user == null) {
@@ -644,7 +626,7 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: primaryColor, // Ikon hijau
+                        color: primaryColor, 
                       ),
                     ),
                   ),
@@ -789,15 +771,9 @@ class _ProducerDashboardState extends State<ProducerDashboard>
       ),
     );
   }
-
-  // ===========================================================================
-  // Section 4: FAB & Dialog (PERBAIKAN DISPOSE)
-  // ===========================================================================
-
   Widget _buildAddProductFAB() {
   return FloatingActionButton.extended(
     onPressed: () {
-      // Ganti dari _showAddProductDialog(ps) menjadi navigasi ke halaman baru
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => AddProductPage(),
@@ -812,8 +788,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
     ),
   );
 }
-
-  // Helper untuk text field di dialog (style baru)
   Widget _buildTextFieldDialog({
     required TextEditingController controller,
     required String labelText,
@@ -898,8 +872,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
       }
       return Icons.shopping_bag;
     }
-  
-    // Return a color for an order status (used in recent orders UI)
     Color _getStatusColor(String status) {
       final s = status.toLowerCase();
       if (s.contains('menunggu') || s.contains('pending')) {
