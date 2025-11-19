@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/mock_services.dart';
 import '../models/models.dart';
+import 'add_product_page.dart';
 
 class ProducerDashboard extends StatefulWidget {
   @override
@@ -794,24 +795,26 @@ class _ProducerDashboardState extends State<ProducerDashboard>
   // ===========================================================================
 
   Widget _buildAddProductFAB() {
-    // Kita pakai 'read' karena ini di dalam tombol
-    final ps = context.read<ProductService>();
-
-    return FloatingActionButton.extended(
-      onPressed: () {
-        _showAddProductDialog(ps); // Kirim ProductService
-      },
-      backgroundColor: primaryColor, // Tombol hijau
-      icon: const Icon(Icons.add),
-      label: const Text(
-        'Tambah Produk',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    );
-  }
+  return FloatingActionButton.extended(
+    onPressed: () {
+      // Ganti dari _showAddProductDialog(ps) menjadi navigasi ke halaman baru
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AddProductPage(),
+        ),
+      );
+    },
+    backgroundColor: primaryColor,
+    icon: const Icon(Icons.add),
+    label: const Text(
+      'Tambah Produk',
+      style: TextStyle(fontWeight: FontWeight.bold),
+    ),
+  );
+}
 
   // Helper untuk text field di dialog (style baru)
-  Widget _buildDialogTextField({
+  Widget _buildTextFieldDialog({
     required TextEditingController controller,
     required String labelText,
     required IconData icon,
@@ -837,226 +840,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
       ),
     );
   }
-
-  // DIALOG TELAH DI-UPDATE
-  void _showAddProductDialog(ProductService ps) {
-    // 1. Definisikan Controllers di luar builder (Ini sudah benar)
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    final stockController = TextEditingController();
-    final imageUrlController = TextEditingController(); 
-    
-    String selectedCategoryId = '1'; 
-    String selectedUnit = 'kg';
-
-    // State untuk loading di dalam dialog
-    bool isDialogLoading = false;
-
-    // Fungsi untuk membersihkan controller (dipanggil SETELAH dialog ditutup)
-    void disposeControllers() {
-        nameController.dispose();
-        priceController.dispose();
-        stockController.dispose();
-        imageUrlController.dispose(); 
-    }
-
-    // 2. showDialog().whenComplete(dispose)
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        // Gunakan StatefulBuilder agar bisa setState di dalam dialog
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              title: const Text(
-                'Tambah Produk Baru',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildDialogTextField(
-                      controller: nameController,
-                      labelText: 'Nama Produk',
-                      icon: Icons.inventory_2,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDialogTextField(
-                      controller: priceController,
-                      labelText: 'Harga',
-                      icon: Icons.attach_money,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDialogTextField(
-                      controller: stockController,
-                      labelText: 'Stok',
-                      icon: Icons.inventory,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 12),
-                    // INPUT BARU: Link Gambar
-                    _buildDialogTextField(
-                      controller: imageUrlController,
-                      labelText: 'Link Gambar (Opsional)',
-                      icon: Icons.image_outlined,
-                      keyboardType: TextInputType.url,
-                    ),
-                    const SizedBox(height: 12),
-                    // Dropdown Kategori
-                    DropdownButtonFormField<String>(
-                      value: selectedCategoryId,
-                      decoration: InputDecoration(
-                        labelText: 'Kategori',
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        prefixIcon:
-                            Icon(Icons.category, color: Colors.grey[700]),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      // Hardcode Kategori dan ID-nya
-                      items: const [
-                        DropdownMenuItem(value: '1', child: Text('Sayur')),
-                        DropdownMenuItem(value: '2', child: Text('Daging')),
-                        DropdownMenuItem(value: '3', child: Text('Ikan')),
-                      ],
-                      onChanged: (val) =>
-                          setDialogState(() => selectedCategoryId = val!),
-                    ),
-                    const SizedBox(height: 12),
-                    // Dropdown Satuan
-                    DropdownButtonFormField<String>(
-                      value: selectedUnit,
-                      decoration: InputDecoration(
-                        labelText: 'Satuan',
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        prefixIcon:
-                            Icon(Icons.straighten, color: Colors.grey[700]),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'kg', child: Text('kg')),
-                        DropdownMenuItem(value: 'pcs', child: Text('pcs')),
-                        DropdownMenuItem(value: 'liter', child: Text('liter')),
-                        DropdownMenuItem(value: 'gram', child: Text('gram')),
-                      ],
-                      onChanged: (val) =>
-                          setDialogState(() => selectedUnit = val!),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    // Hanya pop, tidak dispose di sini
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  onPressed: isDialogLoading ? null : () async {
-                    // Simpan context
-                    final navigator = Navigator.of(dialogContext);
-                    final messenger = ScaffoldMessenger.of(context);
-
-                    if (nameController.text.isEmpty ||
-                        priceController.text.isEmpty ||
-                        stockController.text.isEmpty) {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Semua field harus diisi'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // Tampilkan loading di tombol
-                    setDialogState(() => isDialogLoading = true);
-
-                    // Buat objek Product 
-                    final product = Product(
-                      id: '', 
-                      producerId: '',
-                      name: nameController.text,
-                      description: 'Produk berkualitas',
-                      price: double.parse(priceController.text),
-                      stock: int.parse(stockController.text),
-                      unit: selectedUnit,
-                      category: '',
-                      imageUrl: imageUrlController.text.trim().isNotEmpty
-                          ? imageUrlController.text.trim()
-                          : null,
-                    );
-
-                    // Panggil ProductService
-                    bool success = await ps.addProduct(product, selectedCategoryId);
-
-                    // Hentikan loading
-                    setDialogState(() => isDialogLoading = false);
-
-                    if (success) {
-                      // Tutup dialog HANYA jika sukses
-                      navigator.pop(); 
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Produk berhasil ditambahkan'),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating, // Perbaikan di sini
-                        ),
-                      );
-                    } else {
-                      // Tetap di dialog jika gagal
-                       messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Gagal menambah produk. Coba lagi.'),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating, // Perbaikan di sini
-                        ),
-                      );
-                    }
-                    
-                    // TIDAK ADA dispose() DI SINI
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor, // Tombol hijau
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: isDialogLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Tambah', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-        // 3. PANGGIL DISPOSE HANYA KETIKA DIALOG SUDAH HILANG DARI LAYAR
-        disposeControllers();
-    });
-  }
-
-  // Bottom navigation bar implementation
     Widget _buildBottomNav() {
       return Container(
         decoration: BoxDecoration(

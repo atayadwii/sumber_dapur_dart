@@ -14,13 +14,14 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen>
     with SingleTickerProviderStateMixin {
-  // Definisikan warna primer
   static const Color primaryColor = Color(0xFF1ED760);
 
   int _quantity = 1;
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  Map<String, String> _features = {};
+  String _actualDescription = '';
 
   @override
   void initState() {
@@ -37,14 +38,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    _extractProductFeatures();
   }
+  void _extractProductFeatures() {
+    final fullDesc = widget.product.description;
+    String pengiriman = 'Tidak ditentukan';
+    String kualitas = 'Tidak ditentukan';
+    String layanan = 'Tidak ditentukan';
+    String deskripsiAwal = fullDesc;
 
+
+    final pengirimanMatch = RegExp(r'Pengiriman: (.*?)\.').firstMatch(fullDesc);
+    if (pengirimanMatch != null && pengirimanMatch.groupCount >= 1) {
+      pengiriman = pengirimanMatch.group(1)!.trim();
+      deskripsiAwal = deskripsiAwal.replaceAll(pengirimanMatch.group(0)!, '').trim();
+    }
+    final kualitasMatch = RegExp(r'Kualitas Terjamin: (.*?)\.').firstMatch(deskripsiAwal);
+    if (kualitasMatch != null && kualitasMatch.groupCount >= 1) {
+      kualitas = kualitasMatch.group(1)!.trim();
+      deskripsiAwal = deskripsiAwal.replaceAll(kualitasMatch.group(0)!, '').trim();
+    }
+    final layananMatch = RegExp(r'Layanan 24\/7: (.*?)\.').firstMatch(deskripsiAwal);
+    if (layananMatch != null && layananMatch.groupCount >= 1) {
+      layanan = layananMatch.group(1)!.trim();
+      deskripsiAwal = deskripsiAwal.replaceAll(layananMatch.group(0)!, '').trim();
+    }
+    if (deskripsiAwal.endsWith('.')) {
+      deskripsiAwal = deskripsiAwal.substring(0, deskripsiAwal.length - 1);
+    }
+    deskripsiAwal = deskripsiAwal.trim();
+    _actualDescription = deskripsiAwal.isNotEmpty ? deskripsiAwal : 'Deskripsi produk belum tersedia.';
+    _features = {
+      'pengiriman': pengiriman,
+      'kualitas': kualitas,
+      'layanan': layanan,
+    };
+  }
   @override
   void dispose() {
     _animController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final cartService = Provider.of<CartService>(context, listen: false);
@@ -52,7 +86,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          // Gradien diubah ke hijau
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -82,7 +115,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ),
     );
   }
-
+  
   Widget _buildAppBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -134,7 +167,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // Widget baru untuk menampilkan gambar atau placeholder
   Widget _buildImageWidget() {
     final product = widget.product;
     final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
@@ -156,7 +188,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     }
   }
 
-  // Widget baru untuk Placeholder Ikon
   Widget _buildIconPlaceholder(String category, {double size = 50}) {
     return Center(
       child: Icon(
@@ -200,8 +231,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ),
     );
   }
-
   Widget _buildProductInfo() {
+    final pengiriman = _features['pengiriman'] ?? 'Dikirim dalam 1-2 hari';
+    final kualitas = _features['kualitas'] == 'Ya' ? 'Produk berkualitas premium' : 'Kualitas Standar';
+    final layanan = _features['layanan'] == 'Ya' ? 'Customer service 24/7 siap membantu' : 'Layanan pada jam kerja';
+    final isGuaranteedQuality = _features['kualitas'] == 'Ya';
+    final is247Service = _features['layanan'] == 'Ya';
+
+
     return SlideTransition(
       position: _slideAnimation,
       child: FadeTransition(
@@ -218,19 +255,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Category Badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  // Warna diganti hijau
                   color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   widget.product.category,
                   style: const TextStyle(
-                    // Warna diganti hijau
                     color: primaryColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -238,8 +272,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Product Name
               Text(
                 widget.product.name,
                 style: const TextStyle(
@@ -249,8 +281,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Rating (Mock)
               Row(
                 children: [
                   Row(
@@ -281,8 +311,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Price
               Row(
                 children: [
                   Text(
@@ -290,7 +318,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      // Warna diganti hijau
                       color: primaryColor,
                     ),
                   ),
@@ -305,8 +332,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Stock Info (Biarkan hijau/orange, ini semantik)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -356,8 +381,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Description
               const Text(
                 'Deskripsi Produk',
                 style: TextStyle(
@@ -368,9 +391,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                widget.product.description.isEmpty
-                    ? 'Produk segar berkualitas tinggi dari produsen terpercaya. Cocok untuk kebutuhan bisnis kuliner Anda. Dijamin fresh dan higienis.'
-                    : widget.product.description,
+                _actualDescription.isEmpty
+                    ? 'Produk segar berkualitas tinggi dari produsen terpercaya. Dijamin fresh dan higienis.'
+                    : _actualDescription, 
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey[700],
@@ -378,36 +401,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Features
-              _buildFeatureItem(Icons.local_shipping, 'Pengiriman Cepat',
-                  'Dikirim dalam 1-2 hari'),
+              _buildFeatureItem(
+                  Icons.local_shipping, 'Pengiriman Cepat', pengiriman),
               const SizedBox(height: 12),
               _buildFeatureItem(
-                  Icons.verified, 'Kualitas Terjamin', 'Produk berkualitas premium'),
+                  isGuaranteedQuality ? Icons.verified : Icons.help_outline, 
+                  'Kualitas Terjamin', 
+                  kualitas
+              ),
               const SizedBox(height: 12),
               _buildFeatureItem(
-                  Icons.support_agent, 'Layanan 24/7', 'Customer service siap membantu'),
-              const SizedBox(height: 100), // Space for bottom bar
+                  is247Service ? Icons.support_agent : Icons.access_time, 
+                  'Layanan 24/7', 
+                  layanan
+              ),
+              const SizedBox(height: 100), 
             ],
           ),
         ),
       ),
     );
   }
-
   Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
+    final Color itemColor = subtitle.toLowerCase().contains('tidak ditentukan') || subtitle.toLowerCase().contains('standar') || subtitle.toLowerCase().contains('jam kerja')
+        ? Colors.grey 
+        : primaryColor; 
+        
     return Row(
       children: [
         Container(
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            // Warna diganti hijau
-            color: primaryColor.withOpacity(0.1),
+            color: itemColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: primaryColor, size: 24), // Warna diganti hijau
+          child: Icon(icon, color: itemColor, size: 24),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -456,7 +485,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       child: SafeArea(
         child: Row(
           children: [
-            // Quantity Selector
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[100],
@@ -483,7 +511,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add, color: primaryColor), // Warna diganti hijau
+                    icon: const Icon(Icons.add, color: primaryColor), 
                     onPressed: () {
                       if (_quantity < widget.product.stock) {
                         setState(() => _quantity++);
@@ -502,17 +530,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               ),
             ),
             const SizedBox(width: 16),
-            // Add to Cart Button
             Expanded(
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
-                  // Gradien diganti warna solid hijau
                   color: primaryColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: primaryColor.withOpacity(0.4), // Shadow hijau
+                      color: primaryColor.withOpacity(0.4), 
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
