@@ -24,16 +24,6 @@ class SplashScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             
-            // 2. Tampilkan Nama Aplikasi
-            const Text(
-              'Sumber Dapur',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: logoGreen,
-              ),
-            ),
-            
             // 3. Tambahkan indikator loading
             const SizedBox(height: 40),
             const CircularProgressIndicator(
