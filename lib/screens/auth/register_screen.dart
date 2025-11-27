@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/mock_services.dart'; // Sesuaikan path jika perlu
-import '../../models/models.dart'; // Pastikan ini mengimpor enum UserType
+import '../../services/mock_services.dart';
+import '../../models/models.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -9,14 +9,13 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Controller disesuaikan dengan field baru
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _roleController = TextEditingController(); // Untuk menampilkan role
+  final _roleController = TextEditingController();
 
-  UserType? _selectedRole; // Mengganti _sel, dibuat nullable
+  UserType? _selectedRole;
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -31,18 +30,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Fungsi untuk menampilkan modal pilih role
+  // === Modal Pilih Role ===
   void _showRoleSheet() {
-    // Role yang dipilih sementara di dalam modal
     UserType? tempRole = _selectedRole;
-    
+
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        // StatefulBuilder diperlukan agar Radio button di dalam modal bisa di-update
         return StatefulBuilder(
           builder: (modalContext, modalSetState) {
             return Container(
@@ -51,7 +48,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Handle (garis abu-abu)
                   Center(
                     child: Container(
                       width: 40,
@@ -71,8 +67,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   SizedBox(height: 16),
-                  
-                  // Opsi Penjual (Producer)
+
+                  // Penjual
                   _buildRoleOption(
                     title: 'Penjual',
                     value: UserType.Producer,
@@ -82,25 +78,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   SizedBox(height: 10),
-                  
-                  // Opsi Pembeli (Buyer)
+
+                  // Pembeli
                   _buildRoleOption(
                     title: 'Pembeli',
-                    value: UserType.Buyer, // Menggunakan UserType.Buyer dari kode lama Anda
+                    value: UserType.Buyer,
                     groupValue: tempRole,
                     onChanged: (val) {
                       modalSetState(() => tempRole = val);
                     },
                   ),
+
                   SizedBox(height: 24),
-                  
-                  // Tombol Select
+
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Update state di halaman utama
                         setState(() {
                           _selectedRole = tempRole;
                           if (_selectedRole == UserType.Producer) {
@@ -109,10 +104,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             _roleController.text = 'Pembeli';
                           }
                         });
-                        Navigator.pop(ctx); // Tutup modal
+                        Navigator.pop(ctx);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF1ED760), // Warna hijau baru
+                        backgroundColor: Color(0xFF1ED760),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -138,29 +133,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Helper untuk opsi di modal
+  // === Build Opsi Role dengan Border Hijau Ketika Dipilih ===
   Widget _buildRoleOption({
     required String title,
     required UserType value,
     required UserType? groupValue,
     required void Function(UserType?) onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.w500)),
-        trailing: Radio<UserType>(
-          value: value,
-          groupValue: groupValue,
-          onChanged: onChanged,
-          activeColor: Color(0xFF1ED760),
-        ),
-        onTap: () => onChanged(value),
-        shape: RoundedRectangleBorder(
+    bool isSelected = value == groupValue;
+
+    return GestureDetector(
+      onTap: () => onChanged(value),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Color(0xFF1ED760) : Colors.grey.shade300,
+            width: 2,
+          ),
+        ),
+        child: ListTile(
+          title: Text(
+            title,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? Color(0xFF1ED760) : Colors.black,
+            ),
+          ),
+          trailing: Radio<UserType>(
+            value: value,
+            groupValue: groupValue,
+            onChanged: onChanged,
+            activeColor: Color(0xFF1ED760),
+          ),
         ),
       ),
     );
@@ -188,6 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         centerTitle: true,
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -196,52 +203,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 20),
-                
-                // --- Form ---
+
                 _buildTextField(
                   controller: _nameController,
                   hintText: 'Name',
                 ),
                 SizedBox(height: 20),
-                
+
                 _buildTextField(
                   controller: _emailController,
                   hintText: 'Email',
                   keyboardType: TextInputType.emailAddress,
                 ),
                 SizedBox(height: 20),
-                
-                // Field "Select Role"
+
+                // Select Role
                 _buildTextField(
                   controller: _roleController,
                   hintText: 'Select Role',
-                  readOnly: true, // Tidak bisa diketik
-                  onTap: _showRoleSheet, // Panggil modal
+                  readOnly: true,
+                  onTap: _showRoleSheet,
                   suffixIcon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
                 ),
                 SizedBox(height: 20),
-                
+
                 _buildTextField(
                   controller: _passwordController,
                   hintText: 'Password',
                   obscureText: _obscurePassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: Colors.grey[600],
                     ),
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 SizedBox(height: 20),
-                
+
                 _buildTextField(
                   controller: _confirmPasswordController,
                   hintText: 'Confirm password',
                   obscureText: _obscureConfirmPassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: Colors.grey[600],
                     ),
                     onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
@@ -249,101 +259,95 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 SizedBox(height: 40),
 
-                // Tombol Create Account
+                // Create Account Button
                 _loading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1ED760)),
-                      ),
-                    )
-                  : SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        // ======================================================
-                        // BLOK INI TELAH DIPERBAIKI (onPressed)
-                        // ======================================================
-                        onPressed: () async {
-                          // --- Logika Registrasi ---
-                          
-                          // 1. Validasi field teks
-                          if (_nameController.text.isEmpty ||
-                              _emailController.text.isEmpty ||
-                              _passwordController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Nama, email, dan password harus diisi'),
-                              backgroundColor: Colors.red,
-                            ));
-                            return;
-                          }
-                          
-                          // 2. Validasi role
-                          if (_selectedRole == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Silakan pilih role Anda (Penjual/Pembeli)'),
-                              backgroundColor: Colors.red,
-                            ));
-                            return; // Berhenti di sini jika role belum dipilih
-                          }
-                          
-                          // 3. Validasi password
-                          if (_passwordController.text != _confirmPasswordController.text) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Password tidak cocok'),
-                              backgroundColor: Colors.red,
-                            ));
-                            return;
-                          }
-                          
-                          // --- Jika semua validasi lolos ---
-                          setState(() => _loading = true);
-                          
-                          // Panggil fungsi register dengan 5 argumen
-                          bool success = await auth.register(
-                            _nameController.text.trim(),     // 1. name
-                            _emailController.text.trim(),    // 2. email
-                            "",                              // 3. phone (placeholder)
-                            _passwordController.text,        // 4. password
-                            _selectedRole!,                  // 5. role
-                          );
-                          
-                          setState(() => _loading = false);
-                          
-                          if (success && mounted) {
-                            // Kembali ke login jika berhasil
-                            Navigator.pop(context); 
-                          } else {
-                            // Tampilkan error jika gagal
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Registrasi gagal. Coba lagi.'),
-                              backgroundColor: Colors.red,
-                            ));
-                          }
-                        },
-                        // ======================================================
-                        // AKHIR DARI BLOK YANG DIPERBAIKI
-                        // ======================================================
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1ED760),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF1ED760),
                           ),
-                          elevation: 0,
                         ),
-                        child: Text(
-                          'Create account',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                      )
+                    : SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (_nameController.text.isEmpty ||
+                                _emailController.text.isEmpty ||
+                                _passwordController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Nama, email, dan password harus diisi'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (_selectedRole == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Silakan pilih role Anda'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (_passwordController.text != _confirmPasswordController.text) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Password tidak cocok'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            setState(() => _loading = true);
+
+                            bool success = await auth.register(
+                              _nameController.text.trim(),
+                              _emailController.text.trim(),
+                              "",
+                              _passwordController.text,
+                              _selectedRole!,
+                            );
+
+                            setState(() => _loading = false);
+
+                            if (success && mounted) {
+                              Navigator.pop(context);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Registrasi gagal. Coba lagi.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF1ED760),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Create account',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                
+
                 SizedBox(height: 30),
 
-                // Link Sign In
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -356,8 +360,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Kembali ke halaman login
-                        Navigator.pop(context); 
+                        Navigator.pop(context);
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -384,7 +387,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Helper widget untuk TextField (gaya baru)
+  // === Builder Input Field ===
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
