@@ -1,11 +1,11 @@
 enum UserType { Buyer, Producer }
 
 enum OrderStatus {
-  pending, 
-  processing, 
-  shipping, 
-  completed, 
-  cancelled, 
+  menunggu_pembayaran,  // Pembeli belum upload bukti pembayaran
+  menunggu_konfirmasi,  // Pembeli sudah upload, menunggu penjual konfirmasi
+  proses,               // Penjual terima, pesanan diproses
+  selesai,              // Pesanan selesai (setelah review)
+  batal,                // Pesanan dibatalkan (payment rejected)
 }
 
 enum PaymentMethod {
@@ -216,6 +216,17 @@ class Product {
     };
   }
 
+  // Untuk API request (Laravel)
+  Map<String, dynamic> toJsonForApi() {
+    return {
+      'nama_produk': name,
+      'deskripsi_produk': description,
+      'harga': price,
+      'stok': stock,
+      'satuan': unit,
+    };
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'],
@@ -263,6 +274,17 @@ class Order {
   DateTime? completedAt;
   DateTime? cancelledAt;
   String? cancellationReason;
+  String? proofImageUrl;  // Bukti penerimaan barang (dari pembeli saat complete)
+  
+  // Field baru untuk pembayaran
+  String? buktiPembayaran;  // Bukti pembayaran (dari pembeli saat checkout)
+  DateTime? paymentDeadline;  // Batas waktu pembayaran (1 jam dari checkout)
+  bool isPaid;  // Status pembayaran sudah dikonfirmasi penjual
+  
+  // Field untuk rating & review
+  double? rating;  // Rating 1-5
+  String? review;  // Review text
+  List<String>? reviewImages;  // Foto barang yang diterima
 
   Order({
     required this.id,
@@ -284,32 +306,39 @@ class Order {
     this.completedAt,
     this.cancelledAt,
     this.cancellationReason,
+    this.proofImageUrl,
+    this.buktiPembayaran,
+    this.paymentDeadline,
+    this.isPaid = false,
+    this.rating,
+    this.review,
+    this.reviewImages,
   }) : this.orderStatus = orderStatus ?? _statusFromString(status);
 
   // Helper to convert string status to enum
   static OrderStatus _statusFromString(String status) {
     switch (status.toLowerCase()) {
-      case 'menunggu konfirmasi':
-        return OrderStatus.pending;
-      case 'diproses':
-        return OrderStatus.processing;
-      case 'dikirim':
-        return OrderStatus.shipping;
+      case 'menunggu_pembayaran':
+        return OrderStatus.menunggu_pembayaran;
+      case 'menunggu_konfirmasi':
+        return OrderStatus.menunggu_konfirmasi;
+      case 'proses':
+        return OrderStatus.proses;
       case 'selesai':
-        return OrderStatus.completed;
-      case 'dibatalkan':
-        return OrderStatus.cancelled;
+        return OrderStatus.selesai;
+      case 'batal':
+        return OrderStatus.batal;
       default:
-        return OrderStatus.pending;
+        return OrderStatus.menunggu_pembayaran;
     }
   }
 
   // Helper methods
-  bool get isPending => orderStatus == OrderStatus.pending;
-  bool get isProcessing => orderStatus == OrderStatus.processing;
-  bool get isShipping => orderStatus == OrderStatus.shipping;
-  bool get isCompleted => orderStatus == OrderStatus.completed;
-  bool get isCancelled => orderStatus == OrderStatus.cancelled;
+  bool get isMenungguPembayaran => orderStatus == OrderStatus.menunggu_pembayaran;
+  bool get isMenungguKonfirmasi => orderStatus == OrderStatus.menunggu_konfirmasi;
+  bool get isProses => orderStatus == OrderStatus.proses;
+  bool get isSelesai => orderStatus == OrderStatus.selesai;
+  bool get isBatal => orderStatus == OrderStatus.batal;
 
   String get formattedTotal => 'Rp ${total.toStringAsFixed(0)}';
   
@@ -317,15 +346,15 @@ class Order {
 
   String get statusDisplay {
     switch (orderStatus) {
-      case OrderStatus.pending:
+      case OrderStatus.menunggu_pembayaran:
+        return 'Menunggu Pembayaran';
+      case OrderStatus.menunggu_konfirmasi:
         return 'Menunggu Konfirmasi';
-      case OrderStatus.processing:
-        return 'Diproses';
-      case OrderStatus.shipping:
-        return 'Dikirim';
-      case OrderStatus.completed:
+      case OrderStatus.proses:
+        return 'Sedang Diproses';
+      case OrderStatus.selesai:
         return 'Selesai';
-      case OrderStatus.cancelled:
+      case OrderStatus.batal:
         return 'Dibatalkan';
     }
   }
@@ -351,6 +380,12 @@ class Order {
     DateTime? completedAt,
     DateTime? cancelledAt,
     String? cancellationReason,
+    String? proofImageUrl,
+    String? buktiPembayaran,
+    bool? isPaid,
+    double? rating,
+    String? review,
+    List<String>? reviewImages,
   }) {
     return Order(
       id: id ?? this.id,
@@ -372,6 +407,12 @@ class Order {
       completedAt: completedAt ?? this.completedAt,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancellationReason: cancellationReason ?? this.cancellationReason,
+      proofImageUrl: proofImageUrl ?? this.proofImageUrl,
+      buktiPembayaran: buktiPembayaran ?? this.buktiPembayaran,
+      isPaid: isPaid ?? this.isPaid,
+      rating: rating ?? this.rating,
+      review: review ?? this.review,
+      reviewImages: reviewImages ?? this.reviewImages,
     );
   }
 

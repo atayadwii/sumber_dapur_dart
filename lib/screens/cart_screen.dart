@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/mock_services.dart';
 import '../models/models.dart';
+import 'payment_screen.dart';
 
 class CartScreen extends StatefulWidget {
   @override
@@ -69,18 +70,24 @@ class _CartScreenState extends State<CartScreen>
 
     try {
       // Create orders for each producer
+      Order? firstOrder;
       for (var entry in itemsByProducer.entries) {
         final producerId = entry.key;
         final items = entry.value;
 
         // 2. PANGGIL createOrder TANPA TOKEN
         //    (OrderService sudah punya token dari ProxyProvider)
-        await orderService.createOrder(
+        final order = await orderService.createOrder(
           buyerId: auth.currentUser!.id,
           producerId: producerId,
           items: items,
           // token: token, <-- BARIS INI DIHAPUS
         );
+        
+        // Simpan order pertama untuk navigasi ke payment screen
+        if (firstOrder == null) {
+          firstOrder = order;
+        }
       }
 
       // Update stock (Ini harusnya juga memanggil API, tapi kita biarkan dulu)
@@ -90,23 +97,30 @@ class _CartScreenState extends State<CartScreen>
 
       cart.clear();
 
-      if (mounted) {
+      if (mounted && firstOrder != null) {
         messenger.showSnackBar(
           SnackBar(
             content: Row(
               children: const [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Expanded(child: Text('Pesanan berhasil dibuat!')),
+                Expanded(child: Text('Pesanan berhasil dibuat! Silakan upload bukti pembayaran.')),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-        navigator.pop();
+        
+        // Navigate ke PaymentScreen
+        navigator.pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => PaymentScreen(order: firstOrder!),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

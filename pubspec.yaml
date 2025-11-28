@@ -30,6 +30,9 @@ dependencies:
   # Format Rupiah / tanggal
   intl: ^0.18.1
 
+  # Image picker untuk upload bukti
+  image_picker: ^1.0.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/mock_services.dart';
 import '../models/models.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
+import 'payment_screen.dart';
+import 'complete_order_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -20,6 +24,9 @@ class _HomeScreenState extends State<HomeScreen>
   String _selectedCategory = 'Semua';
   List<Product> _allProducts = [];
   bool _isLoading = true;
+  
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? _selectedImage;
 
   final List<String> _categories = [
     'Semua',
@@ -330,9 +337,9 @@ class _HomeScreenState extends State<HomeScreen>
         padding: const EdgeInsets.all(20),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.75,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemCount: products.length,
         itemBuilder: (context, index) {
@@ -355,13 +362,15 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         child: Image.network(
           product.imageUrl!,
-          height: 120,
+          height: 100,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildIconPlaceholder(product.category), 
+          errorBuilder: (context, error, stackTrace) =>
+              _buildIconPlaceholder(product.category),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+            return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2));
           },
         ),
       );
@@ -396,7 +405,7 @@ class _HomeScreenState extends State<HomeScreen>
             Hero(
               tag: 'product_${product.id}',
               child: Container(
-                height: 120,
+                height: 100,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
@@ -405,32 +414,32 @@ class _HomeScreenState extends State<HomeScreen>
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: imageWidget, 
+                child: imageWidget,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     product.unit,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 10,
                       color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -483,6 +492,7 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
+
   Widget _buildIconPlaceholder(String category) {
     return Center(
       child: Icon(
@@ -581,7 +591,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-
   Widget _buildOrdersContent() {
     final orderService = Provider.of<OrderService>(context);
     final orders = orderService.orders;
@@ -612,8 +621,7 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.receipt_long,
-                        size: 80, color: Colors.grey[300]),
+                    Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
                     const SizedBox(height: 16),
                     Text(
                       'Belum ada pesanan',
@@ -648,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                            'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
+                              'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -682,6 +690,142 @@ class _HomeScreenState extends State<HomeScreen>
                             color: primaryColor,
                           ),
                         ),
+                        
+                        // CONDITIONAL RENDERING BERDASARKAN STATUS (SIMPLIFIED)
+                        
+                        // Status: Menunggu Pembayaran
+                        if (order.isMenungguPembayaran) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PaymentScreen(order: order),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.upload_file),
+                              label: const Text('Upload Bukti Pembayaran'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        
+                        // Status: Menunggu Konfirmasi
+                        if (order.isMenungguKonfirmasi) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.hourglass_empty, color: Colors.blue.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Menunggu penjual mengkonfirmasi pembayaran Anda',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        
+                        // Status: Proses - Tombol Selesaikan
+                        if (order.isProses) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CompleteOrderScreen(order: order),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.rate_review),
+                              label: const Text('Selesaikan Pesanan'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        
+                        // Status: Selesai - Tampilkan Rating & Review
+                        if (order.isSelesai && order.rating != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    ...List.generate(
+                                      5,
+                                      (index) => Icon(
+                                        index < (order.rating ?? 0)
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: Colors.amber,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${order.rating?.toStringAsFixed(1)} / 5.0',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (order.review != null && order.review!.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    order.review!,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   );
@@ -693,20 +837,147 @@ class _HomeScreenState extends State<HomeScreen>
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'menunggu konfirmasi':
+      case 'menunggu_pembayaran':
         return Colors.orange;
-      case 'diproses':
+      case 'menunggu_konfirmasi':
         return Colors.blue;
-      case 'dikirim':
-        return Colors.purple;
-      case 'selesai':
+      case 'proses':
         return Colors.green;
-      case 'dibatalkan':
+      case 'selesai':
+        return Colors.teal;
+      case 'batal':
         return Colors.red;
       default:
         return Colors.grey;
     }
   }
+
+  void _showCompleteOrderDialog(Order order) {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Selesaikan Pesanan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Upload foto bukti penerimaan barang:'),
+              const SizedBox(height: 16),
+              if (_selectedImage != null)
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: FileImage(File(_selectedImage!.path)),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey[200],
+                  ),
+                  child: const Icon(
+                    Icons.image,
+                    size: 50,
+                    color: Colors.grey,
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _pickImage(ImageSource.camera, setState),
+                      icon: const Icon(Icons.camera),
+                      label: const Text('Kamera'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _pickImage(ImageSource.gallery, setState),
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Galeri'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() => _selectedImage = null);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: _selectedImage == null ? null : () => _completeOrder(order),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+              ),
+              child: const Text('Selesaikan'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source, StateSetter setState) async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() => _selectedImage = pickedFile);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking image: $e')),
+      );
+    }
+  }
+
+  Future<void> _completeOrder(Order order) async {
+    if (_selectedImage == null) return;
+
+    Navigator.of(context).pop(); // Close dialog
+
+    try {
+      final orderService = context.read<OrderService>();
+      await orderService.completeOrderWithProof(order.id, _selectedImage!);
+      
+      setState(() => _selectedImage = null);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pesanan berhasil diselesaikan'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyelesaikan pesanan: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildProfileContent(AuthService auth) {
     final user = auth.currentUser;
     if (user == null) {
@@ -824,8 +1095,7 @@ class _HomeScreenState extends State<HomeScreen>
                           borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
-                      Provider.of<AuthService>(context, listen: false)
-                          .logout();
+                      Provider.of<AuthService>(context, listen: false).logout();
                     },
                     child: const Text('Logout',
                         style: TextStyle(fontWeight: FontWeight.bold)),
@@ -873,7 +1143,8 @@ class _HomeScreenState extends State<HomeScreen>
             fontSize: 16,
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing:
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );
