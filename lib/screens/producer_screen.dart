@@ -765,28 +765,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                       );
                     }
                   }
-                } else if (value == 'add_stock') {
-                  await ps.updateStock(product.id, 5);
-                  if (mounted) {
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Stok ditambah 5'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } else if (value == 'reduce_stock') {
-                  await ps.updateStock(product.id, -5);
-                  if (mounted) {
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Stok dikurangi 5'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
                 }
               },
               itemBuilder: (context) => [
@@ -807,27 +785,6 @@ class _ProducerDashboardState extends State<ProducerDashboard>
                       Icon(Icons.delete, color: Colors.red, size: 20),
                       SizedBox(width: 12),
                       Text('Hapus Produk'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'add_stock',
-                  child: Row(
-                    children: [
-                      Icon(Icons.add_circle, color: Colors.green, size: 20),
-                      SizedBox(width: 12),
-                      Text('Tambah Stok (+5)'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'reduce_stock',
-                  child: Row(
-                    children: [
-                      Icon(Icons.remove_circle, color: Colors.orange, size: 20),
-                      SizedBox(width: 12),
-                      Text('Kurangi Stok (-5)'),
                     ],
                   ),
                 ),

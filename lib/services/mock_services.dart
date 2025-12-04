@@ -406,9 +406,24 @@ class OrderService extends ChangeNotifier {
       }),
     );
 
+    print('Create order response: ${response.statusCode} - ${response.body}');
+    
     if (response.statusCode == 201) {
       final data = json.decode(response.body);
-      final orderData = data['data'] ?? data;
+      
+      // ✅ WAJIB ambil pesanan_id dari response backend (bukan generate sendiri!)
+      final realOrderId = data['pesanan_id'];
+      if (realOrderId == null) {
+        throw Exception('Backend tidak mengembalikan pesanan_id');
+      }
+      
+      // ✅ Ambil data pesanan lengkap dari field 'pesanan'
+      final pesananData = data['pesanan'];
+      if (pesananData == null) {
+        throw Exception('Backend tidak mengembalikan data pesanan');
+      }
+      
+      print('✅ Pesanan berhasil dibuat dengan ID: $realOrderId');
       
       // Calculate total from items subtotals
       double total = 0;
@@ -416,17 +431,23 @@ class OrderService extends ChangeNotifier {
         total += item.subtotal;
       }
       
-      // Create order (no deadline - simplified)
+      // ✅ Create order dengan ID dari backend (BUKAN timestamp lokal!)
       final order = Order(
-        id: orderData['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        buyerId: buyerId,
-        producerId: producerId,
-        createdAt: DateTime.now(),
-        status: 'menunggu_pembayaran',
-        total: total,
+        id: realOrderId.toString(), // ✅ GUNAKAN ID DARI BACKEND
+        buyerId: pesananData['user_pembeli_id']?.toString() ?? buyerId,
+        producerId: pesananData['user_penjual_id']?.toString() ?? producerId,
+        createdAt: pesananData['created_at'] != null 
+            ? DateTime.parse(pesananData['created_at'])
+            : DateTime.now(),
+        status: pesananData['status_pesanan'] ?? 'menunggu_pembayaran',
+        total: pesananData['total_harga'] != null 
+            ? double.parse(pesananData['total_harga'].toString())
+            : total,
         items: items,
         isPaid: false,
       );
+      
+      print('✅ Order object created: ID=${order.id}, Status=${order.status}');
       
       // Add to local orders list
       _orders.add(order);
@@ -435,7 +456,9 @@ class OrderService extends ChangeNotifier {
       return order;
     } else {
       final data = json.decode(response.body);
-      throw Exception(data['message'] ?? 'Gagal membuat pesanan');
+      final errorMsg = data['message'] ?? 'Gagal membuat pesanan';
+      print('❌ Create order failed: $errorMsg');
+      throw Exception(errorMsg);
     }
   }
 
@@ -573,6 +596,9 @@ class OrderService extends ChangeNotifier {
   // Upload bukti pembayaran (setelah checkout)
   Future<void> uploadPaymentProof(String orderId, XFile imageFile) async {
     if (!_isLoggedIn || _token == null) throw Exception('User not logged in');
+
+    print('🔵 Upload payment proof untuk Order ID: $orderId');
+    print('🔵 URL: $_baseUrl/pesanan/$orderId/upload-bukti-pembayaran');
 
     var request = http.MultipartRequest(
       'POST',

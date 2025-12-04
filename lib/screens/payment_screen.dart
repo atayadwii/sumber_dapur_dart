@@ -405,6 +405,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       
       if (!mounted) return;
       
+      // ✅ FIXED: Hanya pop 1x karena CartScreen sudah di-replace (bukan di-push)
+      // Stack sebelum upload: HomeScreen → PaymentScreen
+      // Setelah pop: HomeScreen
+      Navigator.of(context).pop(); // Pop PaymentScreen saja
+      
+      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Bukti pembayaran berhasil diupload! Menunggu konfirmasi penjual.'),
@@ -412,15 +419,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      
-      // Kembali ke home screen dengan delay agar snackbar terlihat
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      if (!mounted) return;
-      
-      // Pop payment screen dan cart screen
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
       
     } catch (e) {
       if (!mounted) return;
